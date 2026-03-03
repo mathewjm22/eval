@@ -83,3 +83,64 @@ a {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
+
+/* -----------------------------------------
+   Dark-mode compatibility layer
+   Fixes existing pages that still use:
+   bg-white / slate text / slate borders, etc.
+------------------------------------------ */
+html[data-theme="dark"] .bg-white {
+  background-color: rgba(16, 24, 33, 0.92) !important;
+}
+
+html[data-theme="dark"] .bg-slate-50,
+html[data-theme="dark"] .bg-slate-50\/50,
+html[data-theme="dark"] .bg-slate-100 {
+  background-color: rgba(14, 20, 28, 0.78) !important;
+}
+
+html[data-theme="dark"] .border-slate-100,
+html[data-theme="dark"] .border-slate-200,
+html[data-theme="dark"] .border-slate-300 {
+  border-color: rgba(148, 163, 184, 0.16) !important;
+}
+
+html[data-theme="dark"] .text-slate-900,
+html[data-theme="dark"] .text-slate-800,
+html[data-theme="dark"] .text-slate-700,
+html[data-theme="dark"] .text-slate-600,
+html[data-theme="dark"] .text-slate-500 {
+  color: rgba(229, 231, 235, 0.92) !important;
+}
+
+html[data-theme="dark"] .text-slate-400 {
+  color: rgba(229, 231, 235, 0.62) !important;
+}
+
+/* Links that were indigo in light mode -> lime in dark */
+html[data-theme="dark"] .text-indigo-600,
+html[data-theme="dark"] .text-indigo-700,
+html[data-theme="dark"] .text-indigo-500 {
+  color: var(--accent) !important;
+}
+
+/* Indigo backgrounds used for badges/buttons -> lime-ish */
+html[data-theme="dark"] .bg-indigo-50,
+html[data-theme="dark"] .bg-indigo-100 {
+  background-color: rgba(163, 255, 18, 0.10) !important;
+}
+
+html[data-theme="dark"] .border-indigo-100,
+html[data-theme="dark"] .border-indigo-200 {
+  border-color: rgba(163, 255, 18, 0.22) !important;
+}
+
+/* Primary button (bg-indigo-600) should become lime with dark text */
+html[data-theme="dark"] .bg-indigo-600 {
+  background-color: var(--accent) !important;
+  color: #0b0f14 !important;
+}
+html[data-theme="dark"] .hover\:bg-indigo-700:hover {
+  background-color: #c7ff55 !important;
+  color: #0b0f14 !important;
+}
