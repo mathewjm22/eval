@@ -8,18 +8,15 @@ import { EvaluateSession } from './pages/EvaluateSession';
 import { EvaluationsList } from './pages/EvaluationsList';
 import { ProgressView } from './pages/ProgressView';
 import { Settings } from './pages/Settings';
+import { ThemeProvider } from "./theme"; // <-- add
 
-/**
- * EduTrack Pro - Medical Preceptor Evaluation Tracker
- * 
- * Main Application Entry Point
- */
 export function App() {
   return (
-    <AppProvider>
-      <BrowserRouter>
-        <Layout>
-          <Routes>
+    <ThemeProvider>
+      <AppProvider>
+        <BrowserRouter>
+          <Layout>
+            <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/students" element={<Students />} />
             <Route path="/evaluate" element={<EvaluateSession />} />
@@ -29,9 +26,10 @@ export function App() {
             <Route path="/settings" element={<Settings />} />
             {/* Fallback route */}
             <Route path="*" element={<Dashboard />} />
-          </Routes>
-        </Layout>
-      </BrowserRouter>
-    </AppProvider>
+            </Routes>
+          </Layout>
+        </BrowserRouter>
+      </AppProvider>
+    </ThemeProvider>
   );
 }
