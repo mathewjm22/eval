@@ -1,85 +1,126 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
-import { AppData, PreceptorProfile, StudentProfile, SessionEvaluation } from './types';
-import {
-  loadData, saveData, updatePreceptor as storeUpdatePreceptor,
-  addStudent as storeAddStudent, updateStudent as storeUpdateStudent,
-  deleteStudent as storeDeleteStudent, addEvaluation as storeAddEvaluation,
-  updateEvaluation as storeUpdateEvaluation, deleteEvaluation as storeDeleteEvaluation,
-  importFromJSON,
-} from './store';
+import React, { createContext, useContext, useEffect, useState } from 'react';
+import { initGoogleAPI, saveToGoogleDrive, loadFromGoogleDrive } from './googleDrive';
+import { AppData } from './types';
 
-interface AppContextValue {
-  data: AppData;
-  updatePreceptor: (profile: PreceptorProfile) => void;
-  addStudent: (student: StudentProfile) => void;
-  updateStudent: (student: StudentProfile) => void;
-  deleteStudent: (id: string) => void;
-  addEvaluation: (evaluation: SessionEvaluation) => void;
-  updateEvaluation: (evaluation: SessionEvaluation) => void;
-  deleteEvaluation: (id: string) => void;
-  importData: (json: string) => void;
-}
+const AppDataContext = createContext<AppData | undefined>(undefined);
 
-const AppContext = createContext<AppContextValue | null>(null);
+export const AppProvider: React.FC = ({ children }) => {
+    const [appData, setAppData] = useState<AppData | null>(null);
+    const [isConnected, setIsConnected] = useState(false);
 
-export function AppProvider({ children }: { children: React.ReactNode }) {
-  const [data, setData] = useState<AppData>(() => loadData());
+    const connectToGoogleDrive = async () => {
+        await initGoogleAPI(import.meta.env.VITE_GOOGLE_CLIENT_ID);
+        setIsConnected(true);
+        // Load preceptor_evaluations.json after connecting
+        autoLoadData();
+    };
 
-  const updatePreceptor = useCallback((profile: PreceptorProfile) => {
-    setData(storeUpdatePreceptor(profile));
-  }, []);
+    const autoLoadData = async () => {
+        const data = await loadFromGoogleDrive('preceptor_evaluations.json');
+        setAppData(data);
+    };
 
-  const addStudent = useCallback((student: StudentProfile) => {
-    setData(storeAddStudent(student));
-  }, []);
+    useEffect(() => {
+        const loadFromLocalStorage = () => {
+            const data = localStorage.getItem('preceptor_evaluations');
+            if (data) setAppData(JSON.parse(data));
+        };
+        if (!isConnected) loadFromLocalStorage();
+    }, [isConnected]);
 
-  const updateStudent = useCallback((student: StudentProfile) => {
-    setData(storeUpdateStudent(student));
-  }, []);
+    const debouncedSave = (callback: () => void, delay: number) => {
+        let timeoutId: NodeJS.Timeout;
+        return () => {
+            if (timeoutId) clearTimeout(timeoutId);
+            timeoutId = setTimeout(callback, delay);
+        };
+    };
 
-  const deleteStudent = useCallback((id: string) => {
-    setData(storeDeleteStudent(id));
-  }, []);
+    const saveData = () => {
+        if (isConnected && appData) {
+            saveToGoogleDrive('preceptor_evaluations.json', appData);
+        }
+    };
 
-  const addEvaluation = useCallback((evaluation: SessionEvaluation) => {
-    setData(storeAddEvaluation(evaluation));
-  }, []);
+    const updatePreceptor = (newData: any) => {
+        setAppData((prev) => ({ ...prev, preceptors: newData }));
+        debouncedSave(saveData, 1000)();
+    };
 
-  const updateEvaluation = useCallback((evaluation: SessionEvaluation) => {
-    setData(storeUpdateEvaluation(evaluation));
-  }, []);
+    const addStudent = (student: any) => {
+        setAppData((prev) => ({ ...prev, students: [...prev.students, student] }));
+        debouncedSave(saveData, 1000)();
+    };
 
-  const deleteEvaluation = useCallback((id: string) => {
-    setData(storeDeleteEvaluation(id));
-  }, []);
+    const updateStudent = (studentId: string, updatedData: any) => {
+        setAppData((prev) => ({
+            ...prev,
+            students: prev.students.map((student) => 
+                student.id === studentId ? { ...student, ...updatedData } : student
+            )
+        }));
+        debouncedSave(saveData, 1000)();
+    };
 
-  const importData = useCallback((json: string) => {
-    try {
-      setData(importFromJSON(json));
-    } catch {
-      alert('Failed to import data — the file may be corrupted or in the wrong format.');
+    const deleteStudent = (studentId: string) => {
+        setAppData((prev) => ({ 
+            ...prev,
+            students: prev.students.filter(student => student.id !== studentId)
+        }));
+        debouncedSave(saveData, 1000)();
+    }; 
+
+    const addEvaluation = (evaluation: any) => {
+        setAppData((prev) => ({ ...prev, evaluations: [...prev.evaluations, evaluation]}));
+        debouncedSave(saveData, 1000)();
+    };
+
+    const updateEvaluation = (evaluationId: string, updatedData: any) => {
+        setAppData((prev) => ({
+            ...prev,
+            evaluations: prev.evaluations.map(evaluation => 
+                evaluation.id === evaluationId ? { ...evaluation, ...updatedData } : evaluation
+            )
+        }));
+        debouncedSave(saveData, 1000)();
+    };
+
+    const deleteEvaluation = (evaluationId: string) => {
+        setAppData((prev) => ({
+            ...prev,
+            evaluations: prev.evaluations.filter(evaluation => evaluation.id !== evaluationId)
+        }));
+        debouncedSave(saveData, 1000)();
+    };
+
+    const importData = (data: any) => {
+        setAppData(data);
+        debouncedSave(saveData, 1000)();
+    };
+
+    return (
+        <AppDataContext.Provider value={{
+            appData,
+            updatePreceptor,
+            addStudent,
+            updateStudent,
+            deleteStudent,
+            addEvaluation,
+            updateEvaluation,
+            deleteEvaluation,
+            importData,
+            connectToGoogleDrive,
+            isConnected
+        }}> 
+            {children} 
+        </AppDataContext.Provider>
+    );
+};
+
+export const useAppData = () => {
+    const context = useContext(AppDataContext);
+    if (context === undefined) {
+        throw new Error('useAppData must be used within an AppProvider');
     }
-  }, []);
-
-  return (
-    <AppContext.Provider value={{
-      data,
-      updatePreceptor,
-      addStudent,
-      updateStudent,
-      deleteStudent,
-      addEvaluation,
-      updateEvaluation,
-      deleteEvaluation,
-      importData,
-    }}>
-      {children}
-    </AppContext.Provider>
-  );
-}
-
-export function useAppData(): AppContextValue {
-  const ctx = useContext(AppContext);
-  if (!ctx) throw new Error('useAppData must be used inside AppProvider');
-  return ctx;
-}
+    return context;
+};
