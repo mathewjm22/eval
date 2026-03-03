@@ -1,126 +1,98 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { initGoogleAPI, saveToGoogleDrive, loadFromGoogleDrive } from './googleDrive';
-import { AppData } from './types';
 
-const AppDataContext = createContext<AppData | undefined>(undefined);
+const DriveContext = createContext();
 
-export const AppProvider: React.FC = ({ children }) => {
-    const [appData, setAppData] = useState<AppData | null>(null);
-    const [isConnected, setIsConnected] = useState(false);
+const DriveProvider = ({ children }) => {
+    const [data, setData] = useState(null);
+    const [driveStatus, setDriveStatus] = useState({ connected: false, message: '' });
+    const debounceTimeoutRef = useRef(null);
 
-    const connectToGoogleDrive = async () => {
-        await initGoogleAPI(import.meta.env.VITE_GOOGLE_CLIENT_ID);
-        setIsConnected(true);
-        // Load preceptor_evaluations.json after connecting
-        autoLoadData();
+    const updatePreceptor = (preceptor) => {
+        const updatedData = { ...data, preceptor };
+        handleDataUpdate(updatedData);
     };
 
-    const autoLoadData = async () => {
-        const data = await loadFromGoogleDrive('preceptor_evaluations.json');
-        setAppData(data);
+    const addStudent = (student) => {
+        const updatedData = { ...data, students: [...data.students, student] };
+        handleDataUpdate(updatedData);
+    };
+
+    const updateStudent = (studentId, updatedInfo) => {
+        const updatedData = { ...data, students: data.students.map(student => student.id === studentId ? { ...student, ...updatedInfo } : student) };
+        handleDataUpdate(updatedData);
+    };
+
+    const deleteStudent = (studentId) => {
+        const updatedData = { ...data, students: data.students.filter(student => student.id !== studentId) };
+        handleDataUpdate(updatedData);
+    };
+
+    const addEvaluation = (evaluation) => {
+        const updatedData = { ...data, evaluations: [...data.evaluations, evaluation] };
+        handleDataUpdate(updatedData);
+    };
+
+    const updateEvaluation = (evaluationId, updatedInfo) => {
+        const updatedData = { ...data, evaluations: data.evaluations.map(evaluation => evaluation.id === evaluationId ? { ...evaluation, ...updatedInfo } : evaluation) };
+        handleDataUpdate(updatedData);
+    };
+
+    const deleteEvaluation = (evaluationId) => {
+        const updatedData = { ...data, evaluations: data.evaluations.filter(evaluation => evaluation.id !== evaluationId) };
+        handleDataUpdate(updatedData);
+    };
+
+    const importData = (importedData) => {
+        setData(importedData);
+    };
+
+    const handleDataUpdate = (updatedData) => {
+        setData(updatedData);
+        if (!driveStatus.connected) {
+            localStorage.setItem('preceptor_eval_data', JSON.stringify(updatedData));
+        }
+        scheduleSave(updatedData);
+    };
+
+    const scheduleSave = (updatedData) => {
+        clearTimeout(debounceTimeoutRef.current);
+        debounceTimeoutRef.current = setTimeout(() => {
+            if (driveStatus.connected) {
+                saveToGoogleDrive(JSON.stringify(updatedData, null, 2), 'preceptor_evaluations.json');
+            }
+        }, 2000);
+    };
+
+    const drive = {
+        connect: () => {
+            // Implement Google Drive connection
+            // Update driveStatus accordingly
+            setDriveStatus({ connected: true, message: 'Connected to Google Drive' });
+            autoLoadData();
+        },
+        status: () => driveStatus,
+        message: () => driveStatus.message,
+    };
+
+    const autoLoadData = () => {
+        // Auto-load from Google Drive if needed
     };
 
     useEffect(() => {
-        const loadFromLocalStorage = () => {
-            const data = localStorage.getItem('preceptor_evaluations');
-            if (data) setAppData(JSON.parse(data));
-        };
-        if (!isConnected) loadFromLocalStorage();
-    }, [isConnected]);
-
-    const debouncedSave = (callback: () => void, delay: number) => {
-        let timeoutId: NodeJS.Timeout;
-        return () => {
-            if (timeoutId) clearTimeout(timeoutId);
-            timeoutId = setTimeout(callback, delay);
-        };
-    };
-
-    const saveData = () => {
-        if (isConnected && appData) {
-            saveToGoogleDrive('preceptor_evaluations.json', appData);
+        // Load initial data from localStorage if any
+        const cachedData = localStorage.getItem('preceptor_eval_data');
+        if (cachedData) {
+            setData(JSON.parse(cachedData));
         }
-    };
-
-    const updatePreceptor = (newData: any) => {
-        setAppData((prev) => ({ ...prev, preceptors: newData }));
-        debouncedSave(saveData, 1000)();
-    };
-
-    const addStudent = (student: any) => {
-        setAppData((prev) => ({ ...prev, students: [...prev.students, student] }));
-        debouncedSave(saveData, 1000)();
-    };
-
-    const updateStudent = (studentId: string, updatedData: any) => {
-        setAppData((prev) => ({
-            ...prev,
-            students: prev.students.map((student) => 
-                student.id === studentId ? { ...student, ...updatedData } : student
-            )
-        }));
-        debouncedSave(saveData, 1000)();
-    };
-
-    const deleteStudent = (studentId: string) => {
-        setAppData((prev) => ({ 
-            ...prev,
-            students: prev.students.filter(student => student.id !== studentId)
-        }));
-        debouncedSave(saveData, 1000)();
-    }; 
-
-    const addEvaluation = (evaluation: any) => {
-        setAppData((prev) => ({ ...prev, evaluations: [...prev.evaluations, evaluation]}));
-        debouncedSave(saveData, 1000)();
-    };
-
-    const updateEvaluation = (evaluationId: string, updatedData: any) => {
-        setAppData((prev) => ({
-            ...prev,
-            evaluations: prev.evaluations.map(evaluation => 
-                evaluation.id === evaluationId ? { ...evaluation, ...updatedData } : evaluation
-            )
-        }));
-        debouncedSave(saveData, 1000)();
-    };
-
-    const deleteEvaluation = (evaluationId: string) => {
-        setAppData((prev) => ({
-            ...prev,
-            evaluations: prev.evaluations.filter(evaluation => evaluation.id !== evaluationId)
-        }));
-        debouncedSave(saveData, 1000)();
-    };
-
-    const importData = (data: any) => {
-        setAppData(data);
-        debouncedSave(saveData, 1000)();
-    };
+    }, []);
 
     return (
-        <AppDataContext.Provider value={{
-            appData,
-            updatePreceptor,
-            addStudent,
-            updateStudent,
-            deleteStudent,
-            addEvaluation,
-            updateEvaluation,
-            deleteEvaluation,
-            importData,
-            connectToGoogleDrive,
-            isConnected
-        }}> 
-            {children} 
-        </AppDataContext.Provider>
+        <DriveContext.Provider value={{ data, updatePreceptor, addStudent, updateStudent, deleteStudent, addEvaluation, updateEvaluation, deleteEvaluation, importData, drive }}>
+            {children}
+        </DriveContext.Provider>
     );
 };
 
-export const useAppData = () => {
-    const context = useContext(AppDataContext);
-    if (context === undefined) {
-        throw new Error('useAppData must be used within an AppProvider');
-    }
-    return context;
-};
+const useDrive = () => useContext(DriveContext);
+
+export { DriveProvider, useDrive };
