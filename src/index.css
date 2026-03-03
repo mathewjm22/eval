@@ -1,1 +1,27 @@
 @import "tailwindcss";
+
+/* --- Theme tokens (gunmetal + lime) --- */
+:root {
+  color-scheme: dark;
+  --bg: #0b0f14;        /* near-black */
+  --panel: #101821;     /* gunmetal */
+  --panel-2: #0e141c;   /* deeper */
+  --border: #1f2a37;    /* slate-ish */
+  --text: #e5e7eb;      /* gray-200 */
+  --muted: #9ca3af;     /* gray-400 */
+  --lime: #a3ff12;      /* electric lime */
+  --lime-2: #7dff00;
+}
+
+/* Base page background + type */
+html, body {
+  background: radial-gradient(1200px 800px at 15% 10%, rgba(163, 255, 18, 0.08), transparent 55%),
+              radial-gradient(900px 600px at 85% 20%, rgba(125, 255, 0, 0.06), transparent 60%),
+              var(--bg);
+  color: var(--text);
+}
+
+a { color: inherit; }
+
+/* Optional: selection + subtle scrollbars */
+::selection { background: rgba(163, 255, 18, 0.25); }
