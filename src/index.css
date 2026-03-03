@@ -144,3 +144,29 @@ html[data-theme="dark"] .hover\:bg-indigo-700:hover {
   background-color: #c7ff55 !important;
   color: #0b0f14 !important;
 }
+
+/* -----------------------------------------
+   Quick actions contrast fixes (dark theme)
+   Specifically for Dashboard buttons using:
+   bg-purple-50/border-purple-200/text-purple-700
+   bg-emerald-50/border-emerald-200/text-emerald-700
+------------------------------------------ */
+html[data-theme="dark"] .bg-purple-50,
+html[data-theme="dark"] .bg-emerald-50 {
+  background-color: rgba(163, 255, 18, 0.10) !important;
+}
+
+html[data-theme="dark"] .hover\:bg-purple-100:hover,
+html[data-theme="dark"] .hover\:bg-emerald-100:hover {
+  background-color: rgba(163, 255, 18, 0.16) !important;
+}
+
+html[data-theme="dark"] .text-purple-700,
+html[data-theme="dark"] .text-emerald-700 {
+  color: rgba(229, 231, 235, 0.92) !important;
+}
+
+html[data-theme="dark"] .border-purple-200,
+html[data-theme="dark"] .border-emerald-200 {
+  border-color: rgba(148, 163, 184, 0.22) !important;
+}
