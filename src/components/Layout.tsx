@@ -23,8 +23,7 @@ function ThemeToggle() {
       type="button"
       onClick={toggleTheme}
       className={cn(
-        "theme-ring inline-flex items-center gap-2 rounded-2xl px-3 py-2 text-xs font-medium transition",
-        "border",
+        "theme-ring inline-flex items-center justify-center gap-2 rounded-2xl px-3 py-2 text-xs font-medium transition border",
         "hover:opacity-95 active:opacity-90"
       )}
       style={{
@@ -39,7 +38,7 @@ function ThemeToggle() {
         className="inline-block h-2 w-2 rounded-full"
         style={{ background: "var(--accent)" }}
       />
-      <span className="hidden sm:inline">{isDark ? "Dark" : "Light"}</span>
+      <span className="hidden xl:inline">{isDark ? "Dark" : "Light"}</span>
       <span className="opacity-70">{isDark ? "☾" : "☀︎"}</span>
     </button>
   );
@@ -72,7 +71,10 @@ export function Layout({ children }: { children: ReactNode }) {
   const navLinkActive = "shadow-sm";
 
   return (
-    <div className="min-h-screen" style={{ background: "var(--bg)", color: "var(--text)" }}>
+    <div
+      className="min-h-screen"
+      style={{ background: "var(--bg)", color: "var(--text)" }}
+    >
       {/* Mobile top bar */}
       <header
         className="md:hidden sticky top-0 z-40 border-b"
@@ -145,7 +147,9 @@ export function Layout({ children }: { children: ReactNode }) {
                   cn(navLinkBase, isActive ? navLinkActive : navLinkInactive)
                 }
                 style={({ isActive }) => ({
-                  borderColor: isActive ? "rgba(163, 255, 18, 0.22)" : "transparent",
+                  borderColor: isActive
+                    ? "rgba(163, 255, 18, 0.22)"
+                    : "transparent",
                   background: isActive ? "var(--accent-soft)" : "transparent",
                   color: isActive ? "var(--accent)" : "var(--text)",
                 })}
@@ -162,7 +166,11 @@ export function Layout({ children }: { children: ReactNode }) {
         {/* Sidebar */}
         <aside className="flex flex-col w-64 rounded-3xl theme-panel p-4 shadow-lg">
           {/* Brand */}
-          <Link to="/" className="flex items-center gap-3 px-1 pb-4 border-b" style={{ borderColor: "var(--border)" }}>
+          <Link
+            to="/"
+            className="flex items-center gap-3 px-1 pb-4 border-b"
+            style={{ borderColor: "var(--border)" }}
+          >
             <div
               className="w-9 h-9 rounded-2xl flex items-center justify-center text-black text-lg shadow-md"
               style={{ background: "var(--accent)" }}
@@ -192,7 +200,9 @@ export function Layout({ children }: { children: ReactNode }) {
                   )
                 }
                 style={({ isActive }) => ({
-                  borderColor: isActive ? "rgba(163, 255, 18, 0.22)" : "transparent",
+                  borderColor: isActive
+                    ? "rgba(163, 255, 18, 0.22)"
+                    : "transparent",
                   background: isActive ? "var(--accent-soft)" : "transparent",
                   color: isActive ? "var(--accent)" : "var(--text)",
                 })}
@@ -211,7 +221,10 @@ export function Layout({ children }: { children: ReactNode }) {
           </nav>
 
           {/* Sidebar footer: profile snippet */}
-          <div className="mt-3 pt-3 border-t flex items-center gap-3 px-1" style={{ borderColor: "var(--border)" }}>
+          <div
+            className="mt-3 pt-3 border-t flex items-center gap-3 px-1"
+            style={{ borderColor: "var(--border)" }}
+          >
             <div
               className="h-8 w-8 rounded-2xl text-[11px] font-semibold text-black flex items-center justify-center"
               style={{ background: "var(--accent)" }}
@@ -232,44 +245,47 @@ export function Layout({ children }: { children: ReactNode }) {
         {/* Main column */}
         <div className="flex-1 flex flex-col gap-4 overflow-hidden">
           {/* Header card */}
-          <header className="rounded-3xl theme-panel px-5 py-3 flex items-center gap-4 shadow-lg">
-            <div className="flex-1 min-w-0">
-              <p className="text-[11px] uppercase tracking-[0.18em] theme-muted">
-                {today}
-              </p>
-              <h1 className="text-lg font-semibold truncate">
-                {getPageTitle(location.pathname)}
-              </h1>
-            </div>
-
-            {/* Search (visual) */}
-            <div className="hidden lg:flex items-center rounded-2xl px-3 py-2 text-xs w-60 border theme-panel-2">
-              <span className="mr-2 theme-muted">⌕</span>
-              <input
-                type="text"
-                placeholder="Search students or evaluations"
-                className="bg-transparent outline-none flex-1 text-xs"
-                style={{ color: "var(--text)" }}
-              />
-            </div>
-
-            <ThemeToggle />
-
-            {/* Profile pill */}
-            <div className="flex items-center gap-2 rounded-2xl px-2 py-1 border theme-panel-2">
-              <div
-                className="h-7 w-7 rounded-2xl text-[11px] font-semibold text-black flex items-center justify-center"
-                style={{ background: "var(--accent)" }}
-              >
-                {initials}
+          <header className="rounded-3xl theme-panel px-5 py-3 shadow-lg">
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex-1 min-w-[220px]">
+                <p className="text-[11px] uppercase tracking-[0.18em] theme-muted">
+                  {today}
+                </p>
+                <h1 className="text-lg font-semibold truncate">
+                  {getPageTitle(location.pathname)}
+                </h1>
               </div>
-              <div className="hidden sm:block">
-                <p className="text-[11px] font-medium leading-tight">
-                  {preceptor.name || "Preceptor"}
-                </p>
-                <p className="text-[10px] leading-tight theme-muted">
-                  {preceptor.specialty || "Clinical Educator"}
-                </p>
+
+              {/* Right controls (never collapse) */}
+              <div className="shrink-0 flex items-center gap-2 flex-wrap justify-end">
+                <div className="hidden lg:flex items-center rounded-2xl px-3 py-2 text-xs w-60 border theme-panel-2">
+                  <span className="mr-2 theme-muted">⌕</span>
+                  <input
+                    type="text"
+                    placeholder="Search students or evaluations"
+                    className="bg-transparent outline-none flex-1 text-xs"
+                    style={{ color: "var(--text)" }}
+                  />
+                </div>
+
+                <ThemeToggle />
+
+                <div className="flex items-center gap-2 rounded-2xl px-2 py-1 border theme-panel-2">
+                  <div
+                    className="h-7 w-7 rounded-2xl text-[11px] font-semibold text-black flex items-center justify-center"
+                    style={{ background: "var(--accent)" }}
+                  >
+                    {initials}
+                  </div>
+                  <div className="hidden sm:block">
+                    <p className="text-[11px] font-medium leading-tight">
+                      {preceptor.name || "Preceptor"}
+                    </p>
+                    <p className="text-[10px] leading-tight theme-muted">
+                      {preceptor.specialty || "Clinical Educator"}
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
           </header>
