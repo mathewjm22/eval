@@ -1,85 +1,50 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
-import { AppData, PreceptorProfile, StudentProfile, SessionEvaluation } from './types';
-import {
-  loadData, saveData, updatePreceptor as storeUpdatePreceptor,
-  addStudent as storeAddStudent, updateStudent as storeUpdateStudent,
-  deleteStudent as storeDeleteStudent, addEvaluation as storeAddEvaluation,
-  updateEvaluation as storeUpdateEvaluation, deleteEvaluation as storeDeleteEvaluation,
-  importFromJSON,
-} from './store';
+import React, { useEffect, useState } from 'react';
+import { google } from 'googleapis';
+import { debounce } from 'lodash';
 
-interface AppContextValue {
-  data: AppData;
-  updatePreceptor: (profile: PreceptorProfile) => void;
-  addStudent: (student: StudentProfile) => void;
-  updateStudent: (student: StudentProfile) => void;
-  deleteStudent: (id: string) => void;
-  addEvaluation: (evaluation: SessionEvaluation) => void;
-  updateEvaluation: (evaluation: SessionEvaluation) => void;
-  deleteEvaluation: (id: string) => void;
-  importData: (json: string) => void;
-}
+const AppDataContext = React.createContext();
 
-const AppContext = createContext<AppContextValue | null>(null);
+const AppDataProvider = ({ children }) => {
+    const [appData, setAppData] = useState(null);
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-export function AppProvider({ children }: { children: React.ReactNode }) {
-  const [data, setData] = useState<AppData>(() => loadData());
+    // Load AppData from Google Drive after authentication
+    const loadAppData = async () => {
+        if (!isAuthenticated) return;
+        const { data } = await google.drive('v3').files.list({
+            q: "name='preceptor_evaluations.json'",
+            fields: 'files(id, name)'
+        });
+        // Add logic to read file and set appData
+    };
 
-  const updatePreceptor = useCallback((profile: PreceptorProfile) => {
-    setData(storeUpdatePreceptor(profile));
-  }, []);
+    // Debounced auto save function
+    const saveAppData = debounce(async (data) => {
+        if (isAuthenticated) {
+            // Add save logic here
+        }
+    }, 1000);
 
-  const addStudent = useCallback((student: StudentProfile) => {
-    setData(storeAddStudent(student));
-  }, []);
+    const handleDataChange = (data) => {
+        setAppData(data);
+        saveAppData(data);
+    };
 
-  const updateStudent = useCallback((student: StudentProfile) => {
-    setData(storeUpdateStudent(student));
-  }, []);
+    const ensureAuthenticated = async (clientId) => {
+        // OAuth logic here
+        setIsAuthenticated(true);
+        loadAppData();
+    };
 
-  const deleteStudent = useCallback((id: string) => {
-    setData(storeDeleteStudent(id));
-  }, []);
+    useEffect(() => {
+        // Add logic to get client ID from environment variables and authenticate
+    }, []);
 
-  const addEvaluation = useCallback((evaluation: SessionEvaluation) => {
-    setData(storeAddEvaluation(evaluation));
-  }, []);
+    return (
+        <AppDataContext.Provider value={{ appData, handleDataChange }}>
+            {children}
+        </AppDataContext.Provider>
+    );
+};
 
-  const updateEvaluation = useCallback((evaluation: SessionEvaluation) => {
-    setData(storeUpdateEvaluation(evaluation));
-  }, []);
-
-  const deleteEvaluation = useCallback((id: string) => {
-    setData(storeDeleteEvaluation(id));
-  }, []);
-
-  const importData = useCallback((json: string) => {
-    try {
-      setData(importFromJSON(json));
-    } catch {
-      alert('Failed to import data — the file may be corrupted or in the wrong format.');
-    }
-  }, []);
-
-  return (
-    <AppContext.Provider value={{
-      data,
-      updatePreceptor,
-      addStudent,
-      updateStudent,
-      deleteStudent,
-      addEvaluation,
-      updateEvaluation,
-      deleteEvaluation,
-      importData,
-    }}>
-      {children}
-    </AppContext.Provider>
-  );
-}
-
-export function useAppData(): AppContextValue {
-  const ctx = useContext(AppContext);
-  if (!ctx) throw new Error('useAppData must be used inside AppProvider');
-  return ctx;
-}
+export { AppDataContext, AppDataProvider, ensureAuthenticated, isAuthenticated };
