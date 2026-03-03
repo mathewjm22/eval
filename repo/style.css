@@ -1,0 +1,168 @@
+:root {
+    --primary: #2563eb; /* Medical Blue */
+    --bg: #f3f4f6;
+    --card-bg: #ffffff;
+    --text: #1f2937;
+    --border: #e5e7eb;
+    --danger: #ef4444;
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: var(--bg);
+    color: var(--text);
+    margin: 0;
+    padding: 20px;
+    line-height: 1.5;
+}
+
+.container {
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+header {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+h1 { margin: 0; color: var(--primary); }
+h2 { font-size: 1.2rem; margin-top: 0; border-bottom: 2px solid var(--border); padding-bottom: 10px; }
+
+.card {
+    background: var(--card-bg);
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+}
+
+/* Form Styles */
+.form-group {
+    margin-bottom: 15px;
+}
+
+label {
+    font-weight: 600;
+    display: block;
+    margin-bottom: 5px;
+    font-size: 0.9rem;
+}
+
+input[type="text"], input[type="date"], textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    box-sizing: border-box; /* Critical for padding */
+    font-family: inherit;
+}
+
+/* Sliders */
+.slider-group {
+    margin-bottom: 20px;
+    position: relative;
+}
+
+.rubric-info {
+    display: block;
+    font-size: 0.75rem;
+    color: #6b7280;
+    margin-bottom: 5px;
+    font-style: italic;
+}
+
+.slider {
+    width: 100%;
+    cursor: pointer;
+}
+
+.score-output {
+    position: absolute;
+    right: 0;
+    top: 0;
+    background: var(--primary);
+    color: white;
+    width: 24px;
+    height: 24px;
+    text-align: center;
+    line-height: 24px;
+    border-radius: 50%;
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+
+/* Buttons */
+.btn-primary, .btn-secondary, .btn-danger {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.btn-primary {
+    background-color: var(--primary);
+    color: white;
+    font-size: 1rem;
+}
+
+.btn-secondary {
+    background-color: #e5e7eb;
+    color: #374151;
+    font-size: 0.85rem;
+    margin-bottom: 5px;
+}
+
+.btn-danger {
+    background-color: var(--danger);
+    color: white;
+    font-size: 0.85rem;
+}
+
+.btn-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+/* History List */
+.eval-item {
+    border-left: 4px solid var(--primary);
+    padding-left: 15px;
+    margin-bottom: 15px;
+    background: #f9fafb;
+    padding: 10px 15px;
+    border-radius: 0 6px 6px 0;
+}
+
+.eval-item h3 { margin: 0 0 5px; font-size: 1rem; }
+.eval-item .meta { font-size: 0.8rem; color: #6b7280; margin-bottom: 5px; }
+.scores-display { font-size: 0.85rem; font-weight: 600; color: var(--primary); }
+
+.delete-btn {
+    background: none;
+    border: none;
+    color: #9ca3af;
+    cursor: pointer;
+    float: right;
+    font-size: 0.8rem;
+}
+
+.stats-container {
+    background: #eff6ff;
+    padding: 10px;
+    border-radius: 6px;
+    margin-bottom: 15px;
+    text-align: center;
+    font-size: 0.9rem;
+}
+
+/* Mobile adjustments */
+@media (max-width: 400px) {
+    .btn-row {
+        grid-template-columns: 1fr;
+    }
+}
