@@ -18,7 +18,7 @@ function getInitialTheme(): Theme {
   const saved = localStorage.getItem("theme");
   if (saved === "light" || saved === "dark") return saved;
 
-  // default to dark (you asked for gunmetal/lime as the primary vibe)
+  // default to dark (gunmetal/lime vibe)
   return "dark";
 }
 
