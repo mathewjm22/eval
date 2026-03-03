@@ -1,23 +1,24 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useAppData } from '../context';
 import { PreceptorProfile } from '../types';
 import { exportToJSON } from '../store';
-import { downloadAsFile, uploadFromFile, initGoogleAPI, saveToGoogleDrive, loadFromGoogleDrive } from '../googleDrive';
-
-// Your provided Google Client ID
-const DEFAULT_GOOGLE_CLIENT_ID = "1047921307956-bbtpdhhigflsn6aoa5geu7rqvq7h03qj.apps.googleusercontent.com";
+import { downloadAsFile, uploadFromFile } from '../googleDrive';
 
 export function Settings() {
-  const { data, updatePreceptor, importData } = useAppData();
+  const { data, updatePreceptor, importData, drive } = useAppData();
+
   const [profile, setProfile] = useState<PreceptorProfile>({ ...data.preceptor });
   const [profileSaved, setProfileSaved] = useState(false);
-  
-  // Use default ID if nothing in local storage
-  const [gdClientId, setGdClientId] = useState(() => localStorage.getItem('gd_client_id') || DEFAULT_GOOGLE_CLIENT_ID);
-  
-  const [gdStatus, setGdStatus] = useState<'idle' | 'loading' | 'connected' | 'error'>('idle');
-  const [gdMessage, setGdMessage] = useState('');
   const [saveStatus, setSaveStatus] = useState('');
+
+  // Option A: hide Client ID input entirely if env var exists.
+  const envClientId = (import.meta as any).env?.VITE_GOOGLE_CLIENT_ID as string | undefined;
+  const hasEnvClientId = useMemo(() => !!envClientId && envClientId.trim().length > 0, [envClientId]);
+
+  // Keep the editable profile state in sync with stored data (e.g., after Drive load/import).
+  useEffect(() => {
+    setProfile({ ...data.preceptor });
+  }, [data.preceptor]);
 
   const handleSaveProfile = () => {
     updatePreceptor(profile);
@@ -44,34 +45,10 @@ export function Settings() {
   };
 
   const handleConnectGoogleDrive = async () => {
-    const clientIdToUse = gdClientId.trim();
-    if (!clientIdToUse) {
-      setGdMessage('Please enter a Google Cloud Client ID');
-      return;
-    }
-    localStorage.setItem('gd_client_id', clientIdToUse);
-    setGdStatus('loading');
+    setSaveStatus('Connecting to Google Drive...');
     try {
-      const ok = await initGoogleAPI(clientIdToUse);
-      if (ok) {
-        setGdStatus('connected');
-        setGdMessage('Connected to Google Drive!');
-      } else {
-        setGdStatus('error');
-        setGdMessage('Failed to connect. Check your Client ID.');
-      }
-    } catch {
-      setGdStatus('error');
-      setGdMessage('Connection error.');
-    }
-  };
-
-  const handleSaveToGDrive = async () => {
-    setSaveStatus('Saving to Google Drive...');
-    try {
-      const json = exportToJSON();
-      await saveToGoogleDrive(json, 'preceptor_evaluations.json');
-      setSaveStatus('Saved to Google Drive! ✅');
+      await drive.connect();
+      setSaveStatus('Connected to Google Drive ✅');
       setTimeout(() => setSaveStatus(''), 3000);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Unknown error';
@@ -80,16 +57,11 @@ export function Settings() {
     }
   };
 
-  const handleLoadFromGDrive = async () => {
+  const handleReloadFromDrive = async () => {
     setSaveStatus('Loading from Google Drive...');
     try {
-      const json = await loadFromGoogleDrive('preceptor_evaluations.json');
-      if (json) {
-        importData(json);
-        setSaveStatus('Loaded from Google Drive! ✅');
-      } else {
-        setSaveStatus('No saved data found on Google Drive.');
-      }
+      await drive.reloadFromDrive();
+      setSaveStatus('Loaded from Google Drive ✅');
       setTimeout(() => setSaveStatus(''), 3000);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Unknown error';
@@ -203,51 +175,44 @@ export function Settings() {
       <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
         <h3 className="font-bold text-slate-800 text-lg mb-2">☁️ Google Drive Sync</h3>
         <p className="text-sm text-slate-400 mb-4">
-          Save and load your evaluations to/from Google Drive.
+          Connect to Google Drive. Once connected, your changes will auto-save (debounced).
         </p>
 
         <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Google Cloud Client ID</label>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={gdClientId}
-                onChange={e => setGdClientId(e.target.value)}
-                className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none text-sm"
-                placeholder="your-client-id.apps.googleusercontent.com"
-              />
-              <button
-                onClick={handleConnectGoogleDrive}
-                disabled={gdStatus === 'loading'}
-                className="bg-blue-600 text-white px-4 py-2.5 rounded-xl font-medium text-sm hover:bg-blue-700 transition-colors disabled:opacity-50 shrink-0"
-              >
-                {gdStatus === 'loading' ? '...' : gdStatus === 'connected' ? '✅ Connected' : 'Connect'}
-              </button>
-            </div>
-            {gdMessage && (
-              <p className={`text-xs mt-1.5 ${gdStatus === 'connected' ? 'text-emerald-600' : 'text-red-500'}`}>
-                {gdMessage}
-              </p>
-            )}
-          </div>
-
-          {gdStatus === 'connected' && (
-            <div className="flex flex-wrap gap-3">
-              <button
-                onClick={handleSaveToGDrive}
-                className="bg-emerald-600 text-white px-5 py-2.5 rounded-xl font-medium text-sm hover:bg-emerald-700 transition-colors shadow-md shadow-emerald-200"
-              >
-                ☁️ Save to Google Drive
-              </button>
-              <button
-                onClick={handleLoadFromGDrive}
-                className="bg-blue-600 text-white px-5 py-2.5 rounded-xl font-medium text-sm hover:bg-blue-700 transition-colors shadow-md shadow-blue-200"
-              >
-                📥 Load from Google Drive
-              </button>
+          {!hasEnvClientId && (
+            <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+              VITE_GOOGLE_CLIENT_ID is not set. Add it to your GitHub Pages build environment to enable Drive sync.
             </div>
           )}
+
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              onClick={handleConnectGoogleDrive}
+              disabled={!hasEnvClientId || drive.status === 'connecting' || drive.status === 'connected'}
+              className="bg-blue-600 text-white px-4 py-2.5 rounded-xl font-medium text-sm hover:bg-blue-700 transition-colors disabled:opacity-50"
+            >
+              {drive.status === 'connecting'
+                ? 'Connecting...'
+                : drive.status === 'connected'
+                  ? '✅ Connected'
+                  : 'Connect to Google Drive'}
+            </button>
+
+            <button
+              onClick={handleReloadFromDrive}
+              disabled={drive.status !== 'connected'}
+              className="bg-slate-100 text-slate-700 px-4 py-2.5 rounded-xl font-medium text-sm hover:bg-slate-200 transition-colors disabled:opacity-50"
+            >
+              Reload from Drive
+            </button>
+
+            <span className="text-xs text-slate-400">
+              Status: <span className="font-medium text-slate-600">{drive.message}</span>
+              {drive.lastSyncedAt ? (
+                <span className="ml-2">(last synced {new Date(drive.lastSyncedAt).toLocaleString()})</span>
+              ) : null}
+            </span>
+          </div>
         </div>
       </div>
 
@@ -257,8 +222,8 @@ export function Settings() {
           saveStatus.includes('✅') || saveStatus.includes('success')
             ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
             : saveStatus.includes('Error') || saveStatus.includes('Failed')
-            ? 'bg-red-50 text-red-700 border border-red-200'
-            : 'bg-blue-50 text-blue-700 border border-blue-200'
+              ? 'bg-red-50 text-red-700 border border-red-200'
+              : 'bg-blue-50 text-blue-700 border border-blue-200'
         }`}>
           {saveStatus}
         </div>
