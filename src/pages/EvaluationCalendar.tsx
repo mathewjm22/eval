@@ -1,0 +1,303 @@
+import { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAppData } from '../context';
+import { PHASE_CONFIG } from '../types';
+
+interface CalendarDay {
+  date: Date;
+  iso: string; // YYYY-MM-DD
+  inCurrentMonth: boolean;
+}
+
+function startOfMonth(date: Date) {
+  return new Date(date.getFullYear(), date.getMonth(), 1);
+}
+
+function addMonths(date: Date, months: number) {
+  return new Date(date.getFullYear(), date.getMonth() + months, 1);
+}
+
+function formatISO(d: Date): string {
+  return d.toISOString().split('T')[0];
+}
+
+const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+export function EvaluationCalendar() {
+  const { data } = useAppData();
+  const navigate = useNavigate();
+  const [currentMonth, setCurrentMonth] = useState<Date>(() => {
+    // Default to month of most recent evaluation, or today
+    if (data.evaluations.length > 0) {
+      const latest = [...data.evaluations].sort(
+        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+      )[0];
+      return new Date(latest.date);
+    }
+    return new Date();
+  });
+  const [selectedDateIso, setSelectedDateIso] = useState<string | null>(null);
+
+  // Map date -> list of evaluations
+  const evaluationsByDate = useMemo(() => {
+    const map = new Map<string, typeof data.evaluations>();
+    for (const ev of data.evaluations) {
+      const iso = ev.date;
+      if (!map.has(iso)) map.set(iso, []);
+      map.get(iso)!.push(ev);
+    }
+    return map;
+  }, [data.evaluations]);
+
+  // Build calendar grid for currentMonth
+  const days: CalendarDay[] = useMemo(() => {
+    const start = startOfMonth(currentMonth);
+    const month = start.getMonth();
+    const year = start.getFullYear();
+
+    const firstWeekday = start.getDay(); // 0-6
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+    const grid: CalendarDay[] = [];
+
+    // Days from previous month to fill first week
+    for (let i = 0; i < firstWeekday; i++) {
+      const d = new Date(year, month, i - firstWeekday + 1);
+      grid.push({
+        date: d,
+        iso: formatISO(d),
+        inCurrentMonth: false,
+      });
+    }
+
+    // Current month days
+    for (let day = 1; day <= daysInMonth; day++) {
+      const d = new Date(year, month, day);
+      grid.push({
+        date: d,
+        iso: formatISO(d),
+        inCurrentMonth: true,
+      });
+    }
+
+    // Fill remaining cells to complete 6 weeks (6 * 7 = 42)
+    while (grid.length < 42) {
+      const last = grid[grid.length - 1].date;
+      const d = new Date(last.getFullYear(), last.getMonth(), last.getDate() + 1);
+      grid.push({
+        date: d,
+        iso: formatISO(d),
+        inCurrentMonth: d.getMonth() === month,
+      });
+    }
+
+    return grid;
+  }, [currentMonth]);
+
+  const monthLabel = useMemo(() => {
+    return currentMonth.toLocaleDateString(undefined, {
+      month: 'long',
+      year: 'numeric',
+    });
+  }, [currentMonth]);
+
+  const selectedEvals =
+    selectedDateIso && evaluationsByDate.get(selectedDateIso)
+      ? evaluationsByDate.get(selectedDateIso)!
+      : [];
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold text-slate-800">📅 Evaluation Calendar</h2>
+          <p className="text-sm text-slate-400 mt-1">
+            Click a highlighted date to view and open evaluations from that day.
+          </p>
+        </div>
+      </div>
+
+      {/* Month controls */}
+      <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm flex items-center justify-between gap-4">
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setCurrentMonth(prev => addMonths(prev, -1))}
+            className="px-3 py-1.5 rounded-lg text-sm font-medium bg-slate-100 text-slate-700 hover:bg-slate-200"
+          >
+            ← Previous
+          </button>
+          <button
+            type="button"
+            onClick={() => setCurrentMonth(new Date())}
+            className="px-3 py-1.5 rounded-lg text-sm font-medium bg-slate-50 text-slate-600 hover:bg-slate-100"
+          >
+            Today
+          </button>
+          <button
+            type="button"
+            onClick={() => setCurrentMonth(prev => addMonths(prev, 1))}
+            className="px-3 py-1.5 rounded-lg text-sm font-medium bg-slate-100 text-slate-700 hover:bg-slate-200"
+          >
+            Next →
+          </button>
+        </div>
+        <div className="text-lg font-semibold text-slate-800">{monthLabel}</div>
+      </div>
+
+      {/* Calendar grid */}
+      <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm">
+        <div className="grid grid-cols-7 text-center text-xs font-semibold text-slate-400 mb-2">
+          {WEEKDAYS.map(d => (
+            <div key={d} className="py-1">
+              {d}
+            </div>
+          ))}
+        </div>
+        <div className="grid grid-cols-7 gap-1 text-sm">
+          {days.map(day => {
+            const hasEvals = evaluationsByDate.has(day.iso);
+            const isToday =
+              formatISO(new Date()) === day.iso;
+            const isSelected = selectedDateIso === day.iso;
+
+            let baseClasses =
+              'h-16 rounded-xl flex flex-col items-center justify-between px-1 py-1 cursor-pointer transition-all border ';
+            if (!day.inCurrentMonth) {
+              baseClasses += 'bg-slate-50 text-slate-300 border-slate-100';
+            } else {
+              baseClasses += 'bg-slate-900 text-slate-50 border-slate-700';
+            }
+
+            if (hasEvals && day.inCurrentMonth) {
+              baseClasses += ' shadow-sm shadow-indigo-500/25';
+            }
+
+            if (isSelected) {
+              baseClasses += ' ring-2 ring-lime-400';
+            } else if (isToday && day.inCurrentMonth) {
+              baseClasses += ' ring-1 ring-sky-400';
+            }
+
+            return (
+              <button
+                key={day.iso}
+                type="button"
+                className={baseClasses}
+                onClick={() =>
+                  hasEvals ? setSelectedDateIso(day.iso) : setSelectedDateIso(null)
+                }
+              >
+                <div className="w-full flex justify-between items-center text-[11px]">
+                  <span className="font-semibold">
+                    {day.date.getDate()}
+                  </span>
+                  {isToday && (
+                    <span className="text-[10px] text-sky-300 font-medium">
+                      Today
+                    </span>
+                  )}
+                </div>
+
+                {/* Evaluation indicator */}
+                <div className="flex-1 flex items-center justify-center">
+                  {hasEvals && (
+                    <div className="flex flex-col items-center gap-0.5">
+                      <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                      <span className="text-[10px] text-emerald-100">
+                        {evaluationsByDate.get(day.iso)!.length} eval
+                        {evaluationsByDate.get(day.iso)!.length !== 1 ? 's' : ''}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Selected date details */}
+      {selectedDateIso && (
+        <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm space-y-3">
+          <div className="flex items-center justify-between gap-2">
+            <div>
+              <h3 className="font-semibold text-slate-800 text-sm">
+                Evaluations on {selectedDateIso}
+              </h3>
+              <p className="text-xs text-slate-400">
+                Click an evaluation to view or edit.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setSelectedDateIso(null)}
+              className="text-xs text-slate-500 hover:text-slate-700"
+            >
+              Clear selection
+            </button>
+          </div>
+
+          {selectedEvals.length === 0 ? (
+            <p className="text-sm text-slate-500">
+              No evaluations found on this date.
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {selectedEvals
+                .slice()
+                .sort(
+                  (a, b) =>
+                    new Date(a.date).getTime() -
+                    new Date(b.date).getTime()
+                )
+                .map(ev => {
+                  const student =
+                    data.students.find(s => s.id === ev.studentId)?.name ||
+                    'Unknown student';
+                  const phaseConf = PHASE_CONFIG[ev.phase];
+
+                  return (
+                    <button
+                      key={ev.id}
+                      type="button"
+                      onClick={() => navigate(`/evaluate/${ev.id}`)}
+                      className="w-full text-left bg-slate-900 rounded-xl border border-slate-700 px-3 py-2.5 flex items-center justify-between gap-3 hover:border-indigo-400 hover:bg-slate-800 transition-colors"
+                    >
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-sm font-semibold text-slate-50">
+                          {student}
+                        </span>
+                        <span className="text-[11px] text-slate-300">
+                          {ev.sessionType} • {ev.patientEncounters} patients
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span
+                          className={`hidden sm:inline-block text-[10px] px-2 py-0.5 rounded-full font-medium ${phaseConf.bgColor} ${phaseConf.color} border ${phaseConf.borderColor}`}
+                        >
+                          {phaseConf.label}
+                        </span>
+                        <span
+                          className={`text-sm font-bold ${
+                            ev.overallRating >= 4
+                              ? 'text-emerald-300'
+                              : ev.overallRating >= 3
+                              ? 'text-amber-300'
+                              : 'text-rose-300'
+                          }`}
+                        >
+                          {ev.overallRating}/5 ⭐
+                        </span>
+                      </div>
+                    </button>
+                  );
+                })}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
