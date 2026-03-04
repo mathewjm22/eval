@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppData } from '../context';
-import { PHASE_CONFIG } from '../types';
+import { PHASE_CONFIG, SessionEvaluation } from '../types';
 
 interface CalendarDay {
   date: Date;
@@ -23,6 +23,15 @@ function formatISO(d: Date): string {
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
+// Helper: does this evaluation have any red-flag benchmarks?
+function evalHasRedFlag(ev: SessionEvaluation): boolean {
+  const rf = ev.redFlagBenchmarks;
+  if (!rf) return false;
+  return Object.values(rf).some(
+    v => v && v.status === 'redFlag',
+  );
+}
+
 export function EvaluationCalendar() {
   const { data } = useAppData();
   const navigate = useNavigate();
@@ -30,7 +39,7 @@ export function EvaluationCalendar() {
     // Default to month of most recent evaluation, or today
     if (data.evaluations.length > 0) {
       const latest = [...data.evaluations].sort(
-        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
       )[0];
       return new Date(latest.date);
     }
@@ -40,7 +49,7 @@ export function EvaluationCalendar() {
 
   // Map date -> list of evaluations
   const evaluationsByDate = useMemo(() => {
-    const map = new Map<string, typeof data.evaluations>();
+    const map = new Map<string, SessionEvaluation[]>();
     for (const ev of data.evaluations) {
       const iso = ev.date;
       if (!map.has(iso)) map.set(iso, []);
@@ -157,9 +166,10 @@ export function EvaluationCalendar() {
         </div>
         <div className="grid grid-cols-7 gap-1 text-sm">
           {days.map(day => {
-            const hasEvals = evaluationsByDate.has(day.iso);
-            const isToday =
-              formatISO(new Date()) === day.iso;
+            const evals = evaluationsByDate.get(day.iso) || [];
+            const hasEvals = evals.length > 0;
+            const hasRedFlag = evals.some(ev => evalHasRedFlag(ev));
+            const isToday = formatISO(new Date()) === day.iso;
             const isSelected = selectedDateIso === day.iso;
 
             let baseClasses =
@@ -171,7 +181,10 @@ export function EvaluationCalendar() {
             }
 
             if (hasEvals && day.inCurrentMonth) {
-              baseClasses += ' shadow-sm shadow-indigo-500/25';
+              baseClasses += ' shadow-sm ';
+              baseClasses += hasRedFlag
+                ? 'shadow-rose-500/40'
+                : 'shadow-emerald-500/30';
             }
 
             if (isSelected) {
@@ -179,6 +192,9 @@ export function EvaluationCalendar() {
             } else if (isToday && day.inCurrentMonth) {
               baseClasses += ' ring-1 ring-sky-400';
             }
+
+            const dotColor = hasRedFlag ? 'bg-rose-400' : 'bg-emerald-400';
+            const countColor = hasRedFlag ? 'text-rose-100' : 'text-emerald-100';
 
             return (
               <button
@@ -204,10 +220,9 @@ export function EvaluationCalendar() {
                 <div className="flex-1 flex items-center justify-center">
                   {hasEvals && (
                     <div className="flex flex-col items-center gap-0.5">
-                      <span className="w-2 h-2 rounded-full bg-emerald-400" />
-                      <span className="text-[10px] text-emerald-100">
-                        {evaluationsByDate.get(day.iso)!.length} eval
-                        {evaluationsByDate.get(day.iso)!.length !== 1 ? 's' : ''}
+                      <span className={`w-2 h-2 rounded-full ${dotColor}`} />
+                      <span className={`text-[10px] ${countColor}`}>
+                        {evals.length} eval{evals.length !== 1 ? 's' : ''}
                       </span>
                     </div>
                   )}
@@ -250,20 +265,25 @@ export function EvaluationCalendar() {
                 .sort(
                   (a, b) =>
                     new Date(a.date).getTime() -
-                    new Date(b.date).getTime()
+                    new Date(b.date).getTime(),
                 )
                 .map(ev => {
                   const student =
                     data.students.find(s => s.id === ev.studentId)?.name ||
                     'Unknown student';
                   const phaseConf = PHASE_CONFIG[ev.phase];
+                  const hasRedFlag = evalHasRedFlag(ev);
 
                   return (
                     <button
                       key={ev.id}
                       type="button"
                       onClick={() => navigate(`/evaluate/${ev.id}`)}
-                      className="w-full text-left bg-slate-900 rounded-xl border border-slate-700 px-3 py-2.5 flex items-center justify-between gap-3 hover:border-indigo-400 hover:bg-slate-800 transition-colors"
+                      className={`w-full text-left rounded-xl px-3 py-2.5 flex items-center justify-between gap-3 transition-colors border ${
+                        hasRedFlag
+                          ? 'bg-rose-900 border-rose-700 hover:border-rose-400 hover:bg-rose-800'
+                          : 'bg-slate-900 border-slate-700 hover:border-indigo-400 hover:bg-slate-800'
+                      }`}
                     >
                       <div className="flex flex-col gap-0.5">
                         <span className="text-sm font-semibold text-slate-50">
@@ -272,6 +292,11 @@ export function EvaluationCalendar() {
                         <span className="text-[11px] text-slate-300">
                           {ev.sessionType} • {ev.patientEncounters} patients
                         </span>
+                        {hasRedFlag && (
+                          <span className="text-[10px] text-rose-200 font-medium">
+                            ⚠️ Red-flag concerns documented
+                          </span>
+                        )}
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
                         <span
@@ -281,7 +306,9 @@ export function EvaluationCalendar() {
                         </span>
                         <span
                           className={`text-sm font-bold ${
-                            ev.overallRating >= 4
+                            hasRedFlag
+                              ? 'text-rose-300'
+                              : ev.overallRating >= 4
                               ? 'text-emerald-300'
                               : ev.overallRating >= 3
                               ? 'text-amber-300'
