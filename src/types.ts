@@ -25,6 +25,13 @@ export interface TeachingTopic {
   topics: string[];
 }
 
+export type RedFlagStatus = 'none' | 'redFlag' | 'unsure';
+
+export interface RedFlagPlan {
+  status: RedFlagStatus;
+  plan: string; // what you intend to do if redFlag/unsure
+}
+
 export interface SessionEvaluation {
   id: string;
   studentId: string;
@@ -46,7 +53,16 @@ export interface SessionEvaluation {
   customConditions?: string[];
   teachingTopics?: TeachingTopic[];
   objectivesAchieved?: (string | number)[];
+
+  // NEW: internal-medicine benchmark red flag tracking (preceptor-only)
+  redFlagBenchmarks?: {
+    medicalKnowledge?: RedFlagPlan;
+    clinicalReasoning?: RedFlagPlan;
+    communicationEmotional?: RedFlagPlan;
+    interpersonalCommunication?: RedFlagPlan;
+  };
 }
+
 
 export interface AppData {
   preceptor: PreceptorProfile;
@@ -479,4 +495,5 @@ export const CLINICAL_SKILLS: ClinicalSkill[] = [
       { id: 'communication-skills-ex-3', description: 'Ensures mutual understanding using teach-back and open-ended questions' },
     ],
   },
+
 ];
