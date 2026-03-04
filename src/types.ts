@@ -52,7 +52,67 @@ export const RED_FLAG_COMPETENCIES = [
     label: 'Interpersonal & Communication Skills',
   },
 ];
-
+export const RED_FLAG_DETAILS: Record<
+  (typeof RED_FLAG_COMPETENCIES)[number]['key'],
+  { redFlags: string[]; actions: string[] }
+> = {
+  medicalKnowledge: {
+    redFlags: [
+      'Limited differential diagnosis.',
+      "Doesn't retain and apply things that you taught from one patient to the next.",
+      'Limited answers to questions.',
+      "Doesn't demonstrate growth in knowledge over time.",
+    ],
+    actions: [
+      'Do not ignore!',
+      'Need immediate correction if observed at any point in medical school.',
+      'Additional resources exist that can help a struggling learner.',
+    ],
+  },
+  clinicalReasoning: {
+    redFlags: [
+      'Unorganized presentations.',
+      "Can’t explain or document clinical reasoning.",
+      'Not using hypothesis-driven data gathering – consistently missing key aspects of history or physical exam.',
+      'Difficulty prioritizing information.',
+    ],
+    actions: [
+      'Meet with student.',
+      'Share concerns about behavior with student and get their perspective.',
+      'Address behavior with learner.',
+      'Create plan together.',
+      'Document what you see learner doing with specific examples throughout process.',
+    ],
+  },
+  communicationEmotional: {
+    redFlags: [
+      'Interrupts others frequently.',
+      'Awkward interactions.',
+      'Lack of empathy.',
+      'Lack of situational awareness.',
+      'Challenges receiving or acting on feedback.',
+    ],
+    actions: [
+      'Reach out and get support—you do not have to do this alone!',
+      'Reach out to LIC director or liaison, even if not certain.',
+      'Ask for support.',
+    ],
+  },
+  interpersonalCommunication: {
+    redFlags: [
+      "Arrives late or doesn't follow clinic policy.",
+      'Can’t be relied on to complete tasks or repeated reminders needed.',
+      'Hesitant to seek help when needed.',
+      'Poor communication.',
+      'Does not accept responsibility for actions or is dismissive of feedback.',
+    ],
+    actions: [
+      'Reach out and get support—you do not have to do this alone!',
+      'Reach out to LIC director or liaison, even if not certain.',
+      'Ask for support.',
+    ],
+  },
+};
 export interface SessionEvaluation {
   id: string;
   studentId: string;
@@ -516,3 +576,4 @@ export const CLINICAL_SKILLS: ClinicalSkill[] = [
     ],
   },
 ];
+
