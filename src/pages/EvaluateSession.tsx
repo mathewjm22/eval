@@ -20,7 +20,9 @@ import {
   RED_FLAG_DETAILS,
 } from '../types';
 import { ScoreInput } from '../components/ScoreInput';
+import { getBenchmarkWindowForMonth } from '../benchmarkWindows';
 import { IM_BENCHMARKS, BenchmarkPhase } from '../imBenchmarks';
+
 
 const STEPS = [
   'Session Details',
@@ -125,16 +127,10 @@ export function EvaluateSession() {
     }));
   };
 
-  // Benchmark window based on evaluation date:
-  // Feb (1)–Apr (3) = midYear, May (4)–Jul (6) = endOfYear
+  // Benchmark window based on evaluation date (Feb–Apr = mid-year, May–Jul = end-of-year)
   const evalDate = new Date(form.date || new Date());
   const month = evalDate.getMonth(); // 0 = Jan
-  let benchmarkPhase: BenchmarkPhase | null = null;
-  if (month >= 1 && month <= 3) {
-    benchmarkPhase = 'midYear';
-  } else if (month >= 4 && month <= 6) {
-    benchmarkPhase = 'endOfYear';
-  }
+  const benchmarkPhase = getBenchmarkWindowForMonth(month) as BenchmarkPhase | null;
 
   const setBenchmarkStatus = (
     id: string,
