@@ -4,14 +4,14 @@ export type BenchmarkPhase = 'midYear' | 'endOfYear';
 
 export interface BenchmarkRow {
   id: string;
-  area: string;      // MEPO / area of evaluation
-  midYear: string[]; // bullet points
+  area: string;
+  midYear: string[];
   endOfYear: string[];
 }
 
 // Internal Medicine Benchmarks – LIC
 export const IM_BENCHMARKS: BenchmarkRow[] = [
-  // History and Physical
+  // History and Physical Exam
   {
     id: 'history',
     area: 'Gather a comprehensive patient-centered history.',
@@ -51,12 +51,12 @@ export const IM_BENCHMARKS: BenchmarkRow[] = [
     endOfYear: [
       'Documents history and physical following the patient’s encounter with minimal editing from supervisor in timely fashion.',
       'Documentation of patient encounter demonstrates understanding of differential diagnosis and reasoning behind diagnostic tests and management plans.',
-      'Notes for common or straightforward internal medicine encounters are routinely used for billing purposes (if applicable) with minimal editing.',
+      'Notes for common/straightforward internal medicine encounters are routinely used for billing purposes (if applicable) with minimal editing.',
       'Ensures all documentation is appropriately updated and original work, with appropriate prioritization of problem lists for each encounter.',
     ],
   },
 
-  // Differential diagnosis / assessment / management
+  // Differential Diagnosis / Assessment
   {
     id: 'ddx-working-diagnosis',
     area:
@@ -73,7 +73,7 @@ export const IM_BENCHMARKS: BenchmarkRow[] = [
     ],
   },
 
-  // Management plan
+  // Management Plan
   {
     id: 'management-plan',
     area:
@@ -100,7 +100,7 @@ export const IM_BENCHMARKS: BenchmarkRow[] = [
     ],
   },
 
-  // Oral presentation – from your text
+  // Oral Presentation
   {
     id: 'oral-presentation',
     area: 'Provide an oral presentation of a patient encounter.',
