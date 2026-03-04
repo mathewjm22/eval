@@ -212,29 +212,33 @@ function BenchmarksDetails({ phaseTitle }: { phaseTitle: string }) {
   if (!isMiddle && !isFinal) return null;
 
   return (
-    <details className="mt-2">
-      <summary className="text-[11px] text-slate-400 cursor-pointer">
-        Show {isMiddle ? 'Mid-Year' : 'End-of-Year'} expectations
-      </summary>
-      <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
-        {IM_BENCHMARKS.map((row) => (
-          <div
-            key={row.id}
-            className="bg-slate-950/40 border border-slate-700 rounded-xl p-3 space-y-1.5"
-          >
-            <p className="font-semibold text-slate-100 text-xs">
-              {row.area}
-            </p>
-            <ul className="list-disc list-inside space-y-0.5 text-[11px] text-slate-300">
-              {(isMiddle ? row.midYear : row.endOfYear).map((line, i) => (
+{/* Under the PhaseSection header */}
+{(title.includes('Middle') || title.includes('Final')) && (
+  <details className="mt-2">
+    <summary className="text-[11px] text-slate-400 cursor-pointer">
+      Show {title.includes('Middle') ? 'Mid-Year' : 'End-of-Year'} expectations
+    </summary>
+    <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+      {IM_BENCHMARKS.map((row) => (
+        <div
+          key={row.id}
+          className="bg-slate-950/40 border border-slate-700 rounded-xl p-3 space-y-1.5"
+        >
+          <p className="font-semibold text-slate-100 text-xs">
+            {row.area}
+          </p>
+          <ul className="list-disc list-inside space-y-0.5 text-[11px] text-slate-300">
+            {(title.includes('Middle') ? row.midYear : row.endOfYear).map(
+              (line, i) => (
                 <li key={i}>{line}</li>
-              ))}
-            </ul>
-          </div>
-        ))}
-      </div>
-    </details>
-  );
+              ),
+            )}
+          </ul>
+        </div>
+      ))}
+    </div>
+  </details>
+)}
 }
 
 function PhaseSection({
@@ -247,7 +251,20 @@ function PhaseSection({
   description: string;
   evaluations: SessionEvaluation[];
   navigate: (path: string) => void;
-}) {
+}
+// inside RotationSummary.tsx, in PhaseSection for middle and final
+
+{title.includes('Middle') && (
+  <p className="mt-1 text-[11px] text-slate-400">
+    Use these evaluations to judge progress toward the <span className="font-semibold">Mid-Year (February)</span> benchmarks.
+  </p>
+)}
+{title.includes('Final') && (
+  <p className="mt-1 text-[11px] text-slate-400">
+    Use these evaluations to judge performance against the <span className="font-semibold">End-of-Year (August)</span> benchmarks.
+  </p>
+)}                     
+                     ) {
   if (evaluations.length === 0) {
     return (
       <div className="rounded-2xl bg-slate-900 border border-slate-800 p-4">
