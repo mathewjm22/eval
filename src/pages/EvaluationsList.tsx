@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAppData } from '../context';
-import { PHASE_CONFIG, SCORE_CATEGORIES, SCORE_LABELS } from '../types';
+import { PHASE_CONFIG, SCORE_CATEGORIES, SCORE_LABELS, RED_FLAG_COMPETENCIES } from '../types';
 
 export function EvaluationsList() {
   const { data, deleteEvaluation } = useAppData();
@@ -34,71 +34,14 @@ export function EvaluationsList() {
     if (expandedId === id) setExpandedId(null);
   };
 
-  // inside expanded card render
-const rf = ev.redFlagBenchmarks;
-
-const hasAnyRedFlagInfo =
-  rf &&
-  Object.values(rf).some(
-    v => v && (v.status === 'redFlag' || v.status === 'unsure' || (v.plan ?? '').trim() !== ''),
-  );
-
-{hasAnyRedFlagInfo && (
-  <div className="bg-rose-50 rounded-xl p-4 border border-rose-200 space-y-3">
-    <h4 className="font-semibold text-rose-800 text-sm">
-      Internal Medicine Benchmarks – Red Flags (Mid-Year / End-of-Rotation)
-    </h4>
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
-      {RED_FLAG_COMPETENCIES.map(comp => {
-        const val = rf?.[comp.key];
-        if (!val) return null;
-        if (
-          val.status === 'none' &&
-          (!val.plan || val.plan.trim() === '')
-        ) {
-          return null;
-        }
-
-        const statusLabel =
-          val.status === 'redFlag'
-            ? 'Red Flags Observed'
-            : val.status === 'unsure'
-            ? 'Unsure'
-            : 'No Concerns';
-
-        const statusColor =
-          val.status === 'redFlag'
-            ? 'bg-rose-600 text-white'
-            : val.status === 'unsure'
-            ? 'bg-amber-500 text-white'
-            : 'bg-emerald-500 text-white';
-
-        return (
-          <div key={comp.key} className="bg-white rounded-lg border border-rose-100 p-3 space-y-1.5">
-            <div className="flex items-center justify-between gap-2">
-              <p className="font-semibold text-slate-800 text-xs">{comp.label}</p>
-              <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${statusColor}`}>
-                {statusLabel}
-              </span>
-            </div>
-            {val.plan && val.plan.trim() && (
-              <p className="text-[11px] text-slate-600 whitespace-pre-wrap">
-                {val.plan}
-              </p>
-            )}
-          </div>
-        );
-      })}
-    </div>
-  </div>
-)}
-
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-slate-800">📋 All Evaluations</h2>
-          <p className="text-sm text-slate-400 mt-1">{filtered.length} evaluation{filtered.length !== 1 ? 's' : ''} found</p>
+          <p className="text-sm text-slate-400 mt-1">
+            {filtered.length} evaluation{filtered.length !== 1 ? 's' : ''} found
+          </p>
         </div>
         <Link
           to="/evaluate"
@@ -160,8 +103,7 @@ const hasAnyRedFlagInfo =
           <p className="text-sm text-slate-400 mt-2">
             {data.evaluations.length === 0
               ? 'Create your first evaluation to see it here.'
-              : 'Try adjusting your filters.'
-            }
+              : 'Try adjusting your filters.'}
           </p>
         </div>
       ) : (
@@ -169,10 +111,28 @@ const hasAnyRedFlagInfo =
           {filtered.map((ev) => {
             const phaseConf = PHASE_CONFIG[ev.phase];
             const isExpanded = expandedId === ev.id;
-            const scoreAvg = ((Object.values(ev.scores) as number[]).reduce((a, b) => a + b, 0) / Object.values(ev.scores).length).toFixed(1);
+            const scoreAvg = (
+              (Object.values(ev.scores) as number[]).reduce((a, b) => a + b, 0) /
+              Object.values(ev.scores).length
+            ).toFixed(1);
+
+            // Red-flag info for this evaluation
+            const rf = ev.redFlagBenchmarks;
+            const hasAnyRedFlagInfo =
+              rf &&
+              Object.values(rf).some(
+                v =>
+                  v &&
+                  (v.status === 'redFlag' ||
+                    v.status === 'unsure' ||
+                    (v.plan ?? '').trim() !== ''),
+              );
 
             return (
-              <div key={ev.id} className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+              <div
+                key={ev.id}
+                className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden hover:shadow-md transition-shadow"
+              >
                 <div
                   className="p-4 sm:p-5 cursor-pointer flex items-center justify-between gap-4"
                   onClick={() => setExpandedId(isExpanded ? null : ev.id)}
@@ -182,21 +142,45 @@ const hasAnyRedFlagInfo =
                       W{ev.weekNumber}
                     </div>
                     <div className="min-w-0">
-                      <p className="font-semibold text-slate-800 truncate">{getStudentName(ev.studentId)}</p>
-                      <p className="text-xs text-slate-400 mt-0.5">{ev.date} • {ev.sessionType} • {ev.patientEncounters} patients</p>
+                      <p className="font-semibold text-slate-800 truncate">
+                        {getStudentName(ev.studentId)}
+                      </p>
+                      <p className="text-xs text-slate-400 mt-0.5">
+                        {ev.date} • {ev.sessionType} • {ev.patientEncounters} patients
+                      </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3 shrink-0">
-                    <span className={`hidden sm:inline-block text-xs px-2.5 py-1 rounded-full font-medium ${phaseConf.bgColor} ${phaseConf.color} border ${phaseConf.borderColor}`}>
+                    <span
+                      className={`hidden sm:inline-block text-xs px-2.5 py-1 rounded-full font-medium ${phaseConf.bgColor} ${phaseConf.color} border ${phaseConf.borderColor}`}
+                    >
                       {phaseConf.label}
                     </span>
-                    <span className={`text-lg font-bold ${
-                      ev.overallRating >= 4 ? 'text-emerald-600' : ev.overallRating >= 3 ? 'text-yellow-600' : 'text-red-600'
-                    }`}>
+                    <span
+                      className={`text-lg font-bold ${
+                        ev.overallRating >= 4
+                          ? 'text-emerald-600'
+                          : ev.overallRating >= 3
+                          ? 'text-yellow-600'
+                          : 'text-red-600'
+                      }`}
+                    >
                       {ev.overallRating}/5
                     </span>
-                    <svg className={`w-5 h-5 text-slate-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    <svg
+                      className={`w-5 h-5 text-slate-400 transition-transform ${
+                        isExpanded ? 'rotate-180' : ''
+                      }`}
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 9l-7 7-7-7"
+                      />
                     </svg>
                   </div>
                 </div>
@@ -205,22 +189,38 @@ const hasAnyRedFlagInfo =
                   <div className="border-t border-slate-100 p-4 sm:p-5 space-y-5 bg-slate-50/50">
                     {/* Scores Grid */}
                     <div>
-                      <h4 className="font-semibold text-slate-700 text-sm mb-3">Competency Scores</h4>
+                      <h4 className="font-semibold text-slate-700 text-sm mb-3">
+                        Competency Scores
+                      </h4>
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                         {SCORE_CATEGORIES.map(cat => (
-                          <div key={cat.key} className="bg-white rounded-lg p-3 border border-slate-100 text-center">
-                            <p className="text-[11px] text-slate-400 mb-1 leading-tight">{cat.label}</p>
-                            <p className={`text-xl font-bold ${
-                              ev.scores[cat.key] >= 4 ? 'text-emerald-600' : ev.scores[cat.key] >= 3 ? 'text-yellow-600' : 'text-red-600'
-                            }`}>
+                          <div
+                            key={cat.key}
+                            className="bg-white rounded-lg p-3 border border-slate-100 text-center"
+                          >
+                            <p className="text-[11px] text-slate-400 mb-1 leading-tight">
+                              {cat.label}
+                            </p>
+                            <p
+                              className={`text-xl font-bold ${
+                                ev.scores[cat.key] >= 4
+                                  ? 'text-emerald-600'
+                                  : ev.scores[cat.key] >= 3
+                                  ? 'text-yellow-600'
+                                  : 'text-red-600'
+                              }`}
+                            >
                               {ev.scores[cat.key]}
                             </p>
-                            <p className="text-[10px] text-slate-400">{SCORE_LABELS[ev.scores[cat.key]]}</p>
+                            <p className="text-[10px] text-slate-400">
+                              {SCORE_LABELS[ev.scores[cat.key]]}
+                            </p>
                           </div>
                         ))}
                       </div>
                       <p className="text-center mt-3 text-sm text-slate-500">
-                        Average: <span className="font-bold text-indigo-600">{scoreAvg}/5</span>
+                        Average:{' '}
+                        <span className="font-bold text-indigo-600">{scoreAvg}/5</span>
                       </p>
                     </div>
 
@@ -228,34 +228,111 @@ const hasAnyRedFlagInfo =
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       {ev.strengths && (
                         <div className="bg-emerald-50 rounded-lg p-3 border border-emerald-100">
-                          <h5 className="font-semibold text-emerald-700 text-xs mb-1">💪 Strengths</h5>
-                          <p className="text-sm text-slate-600 whitespace-pre-wrap">{ev.strengths}</p>
+                          <h5 className="font-semibold text-emerald-700 text-xs mb-1">
+                            💪 Strengths
+                          </h5>
+                          <p className="text-sm text-slate-600 whitespace-pre-wrap">
+                            {ev.strengths}
+                          </p>
                         </div>
                       )}
                       {ev.areasForImprovement && (
                         <div className="bg-amber-50 rounded-lg p-3 border border-amber-100">
-                          <h5 className="font-semibold text-amber-700 text-xs mb-1">🎯 Areas for Improvement</h5>
-                          <p className="text-sm text-slate-600 whitespace-pre-wrap">{ev.areasForImprovement}</p>
+                          <h5 className="font-semibold text-amber-700 text-xs mb-1">
+                            🎯 Areas for Improvement
+                          </h5>
+                          <p className="text-sm text-slate-600 whitespace-pre-wrap">
+                            {ev.areasForImprovement}
+                          </p>
                         </div>
                       )}
                       {ev.actionPlan && (
                         <div className="bg-blue-50 rounded-lg p-3 border border-blue-100">
-                          <h5 className="font-semibold text-blue-700 text-xs mb-1">📋 Action Plan</h5>
-                          <p className="text-sm text-slate-600 whitespace-pre-wrap">{ev.actionPlan}</p>
+                          <h5 className="font-semibold text-blue-700 text-xs mb-1">
+                            📋 Action Plan
+                          </h5>
+                          <p className="text-sm text-slate-600 whitespace-pre-wrap">
+                            {ev.actionPlan}
+                          </p>
                         </div>
                       )}
                       {ev.preceptorNotes && (
                         <div className="bg-slate-100 rounded-lg p-3 border border-slate-200">
-                          <h5 className="font-semibold text-slate-700 text-xs mb-1">📝 Notes</h5>
-                          <p className="text-sm text-slate-600 whitespace-pre-wrap">{ev.preceptorNotes}</p>
+                          <h5 className="font-semibold text-slate-700 text-xs mb-1">
+                            📝 Notes
+                          </h5>
+                          <p className="text-sm text-slate-600 whitespace-pre-wrap">
+                            {ev.preceptorNotes}
+                          </p>
                         </div>
                       )}
                     </div>
 
+                    {/* Internal Medicine Red-Flag Benchmarks */}
+                    {hasAnyRedFlagInfo && (
+                      <div className="bg-rose-50 rounded-xl p-4 border border-rose-200 space-y-3">
+                        <h4 className="font-semibold text-rose-800 text-sm">
+                          Internal Medicine Benchmarks – Red Flags (Mid-Year / End-of-Rotation)
+                        </h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                          {RED_FLAG_COMPETENCIES.map(comp => {
+                            const val = rf?.[comp.key];
+                            if (!val) return null;
+                            if (
+                              val.status === 'none' &&
+                              (!val.plan || val.plan.trim() === '')
+                            ) {
+                              return null;
+                            }
+
+                            const statusLabel =
+                              val.status === 'redFlag'
+                                ? 'Red Flags Observed'
+                                : val.status === 'unsure'
+                                ? 'Unsure'
+                                : 'No Concerns';
+
+                            const statusColor =
+                              val.status === 'redFlag'
+                                ? 'bg-rose-600 text-white'
+                                : val.status === 'unsure'
+                                ? 'bg-amber-500 text-white'
+                                : 'bg-emerald-500 text-white';
+
+                            return (
+                              <div
+                                key={comp.key}
+                                className="bg-white rounded-lg border border-rose-100 p-3 space-y-1.5"
+                              >
+                                <div className="flex items-center justify-between gap-2">
+                                  <p className="font-semibold text-slate-800 text-xs">
+                                    {comp.label}
+                                  </p>
+                                  <span
+                                    className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${statusColor}`}
+                                  >
+                                    {statusLabel}
+                                  </span>
+                                </div>
+                                {val.plan && val.plan.trim() && (
+                                  <p className="text-[11px] text-slate-600 whitespace-pre-wrap">
+                                    {val.plan}
+                                  </p>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
                     {/* Actions */}
                     <div className="flex gap-2 pt-2">
                       <button
-                        onClick={(e) => { e.stopPropagation(); navigate(`/evaluate/${ev.id}`); }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/evaluate/${ev.id}`);
+                        }}
                         className="px-4 py-2 rounded-lg text-sm font-medium bg-indigo-100 text-indigo-700 hover:bg-indigo-200 transition-colors"
                       >
                         ✏️ Edit
@@ -263,13 +340,19 @@ const hasAnyRedFlagInfo =
                       {showDeleteConfirm === ev.id ? (
                         <div className="flex gap-1">
                           <button
-                            onClick={(e) => { e.stopPropagation(); handleDelete(ev.id); }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDelete(ev.id);
+                            }}
                             className="px-4 py-2 rounded-lg text-sm font-medium bg-red-500 text-white hover:bg-red-600 transition-colors"
                           >
                             Confirm Delete
                           </button>
                           <button
-                            onClick={(e) => { e.stopPropagation(); setShowDeleteConfirm(null); }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setShowDeleteConfirm(null);
+                            }}
                             className="px-4 py-2 rounded-lg text-sm font-medium bg-slate-200 text-slate-600 hover:bg-slate-300 transition-colors"
                           >
                             Cancel
@@ -277,7 +360,10 @@ const hasAnyRedFlagInfo =
                         </div>
                       ) : (
                         <button
-                          onClick={(e) => { e.stopPropagation(); setShowDeleteConfirm(ev.id); }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setShowDeleteConfirm(ev.id);
+                          }}
                           className="px-4 py-2 rounded-lg text-sm font-medium bg-red-50 text-red-600 hover:bg-red-100 transition-colors"
                         >
                           🗑️ Delete
