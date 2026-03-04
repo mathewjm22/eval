@@ -24,7 +24,15 @@ export interface TeachingTopic {
   category: string;
   topics: string[];
 }
+// in types.ts, extend SessionEvaluation
+export interface BenchmarkAssessment {
+  status: 'met' | 'notMet' | 'notAssessed';
+}
 
+// Add this to SessionEvaluation:
+benchmarkAssessments?: {
+  [benchmarkId: string]: BenchmarkAssessment;
+};
 // ─── Internal Medicine Red-Flag Benchmarks ───────────────────────────────────
 
 export type RedFlagStatus = 'none' | 'redFlag' | 'unsure';
@@ -576,4 +584,5 @@ export const CLINICAL_SKILLS: ClinicalSkill[] = [
     ],
   },
 ];
+
 
