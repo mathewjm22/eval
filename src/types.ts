@@ -92,6 +92,25 @@ export const DEFAULT_SCORES: Record<string, number> = {
   teamwork: 3,
 };
 
+export const RED_FLAG_COMPETENCIES = [
+  {
+    key: 'medicalKnowledge' as const,
+    label: 'Medical Knowledge',
+  },
+  {
+    key: 'clinicalReasoning' as const,
+    label: 'Clinical Reasoning',
+  },
+  {
+    key: 'communicationEmotional' as const,
+    label: 'Communication & Emotional Intelligence',
+  },
+  {
+    key: 'interpersonalCommunication' as const,
+    label: 'Interpersonal & Communication Skills',
+  },
+];
+
 export const SCORE_CATEGORIES: {
   key: string;
   label: string;
@@ -497,3 +516,4 @@ export const CLINICAL_SKILLS: ClinicalSkill[] = [
   },
 
 ];
+
