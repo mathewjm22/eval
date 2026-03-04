@@ -22,7 +22,8 @@ export function Students() {
   const [form, setForm] = useState<Omit<StudentProfile, 'id'>>(EMPTY_FORM);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
-  const evalCountFor = (id: string) => data.evaluations.filter(e => e.studentId === id).length;
+  const evalCountFor = (id: string) =>
+    data.evaluations.filter(e => e.studentId === id).length;
 
   const openAdd = () => {
     setForm(EMPTY_FORM);
@@ -31,7 +32,12 @@ export function Students() {
   };
 
   const openEdit = (s: StudentProfile) => {
-    setForm({ name: s.name, program: s.program, yearLevel: s.yearLevel, startDate: s.startDate });
+    setForm({
+      name: s.name,
+      program: s.program,
+      yearLevel: s.yearLevel,
+      startDate: s.startDate,
+    });
     setEditingId(s.id);
     setShowForm(true);
   };
@@ -59,7 +65,8 @@ export function Students() {
         <div>
           <h2 className="text-2xl font-bold text-slate-800">👥 Students</h2>
           <p className="text-sm text-slate-400 mt-1">
-            {data.students.length} student{data.students.length !== 1 ? 's' : ''} enrolled
+            {data.students.length} student
+            {data.students.length !== 1 ? 's' : ''} enrolled
           </p>
         </div>
         <button
@@ -84,7 +91,9 @@ export function Students() {
               <input
                 type="text"
                 value={form.name}
-                onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                onChange={e =>
+                  setForm(f => ({ ...f, name: e.target.value }))
+                }
                 placeholder="e.g. Jane Smith"
                 className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none"
               />
@@ -95,7 +104,9 @@ export function Students() {
               </label>
               <select
                 value={form.program}
-                onChange={e => setForm(f => ({ ...f, program: e.target.value }))}
+                onChange={e =>
+                  setForm(f => ({ ...f, program: e.target.value }))
+                }
                 className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none"
               >
                 {PROGRAMS.map(p => (
@@ -109,7 +120,9 @@ export function Students() {
               </label>
               <select
                 value={form.yearLevel}
-                onChange={e => setForm(f => ({ ...f, yearLevel: e.target.value }))}
+                onChange={e =>
+                  setForm(f => ({ ...f, yearLevel: e.target.value }))
+                }
                 className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none"
               >
                 {YEAR_LEVELS.map(y => (
@@ -124,7 +137,9 @@ export function Students() {
               <input
                 type="date"
                 value={form.startDate}
-                onChange={e => setForm(f => ({ ...f, startDate: e.target.value }))}
+                onChange={e =>
+                  setForm(f => ({ ...f, startDate: e.target.value }))
+                }
                 className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none"
               />
             </div>
@@ -171,6 +186,21 @@ export function Students() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {data.students.map(s => {
             const evals = evalCountFor(s.id);
+            const evalsForStudent = data.evaluations.filter(
+              e => e.studentId === s.id,
+            );
+            const earlyCount = evalsForStudent.filter(
+              e => e.phase === 'early',
+            ).length;
+            const middleCount = evalsForStudent.filter(
+              e => e.phase === 'middle',
+            ).length;
+            const finalCount = evalsForStudent.filter(
+              e => e.phase === 'final',
+            ).length;
+            const totalForStudent =
+              evalsForStudent.length === 0 ? 1 : evalsForStudent.length;
+
             return (
               <div
                 key={s.id}
@@ -248,7 +278,44 @@ export function Students() {
                   </p>
                 )}
 
-                {/* NEW: Rotation Summary button */}
+                {/* Phase progress bar */}
+                {evals > 0 && (
+                  <div className="mt-3 space-y-1">
+                    <p className="text-[11px] text-slate-400 font-medium uppercase tracking-wide">
+                      Rotation Phase Coverage
+                    </p>
+                    <div className="h-2 w-full rounded-full bg-slate-100 overflow-hidden flex">
+                      <div
+                        className="h-full bg-blue-500"
+                        style={{
+                          width: `${(earlyCount / totalForStudent) * 100}%`,
+                        }}
+                        title={`Early: ${earlyCount}`}
+                      />
+                      <div
+                        className="h-full bg-amber-500"
+                        style={{
+                          width: `${(middleCount / totalForStudent) * 100}%`,
+                        }}
+                        title={`Middle: ${middleCount}`}
+                      />
+                      <div
+                        className="h-full bg-emerald-500"
+                        style={{
+                          width: `${(finalCount / totalForStudent) * 100}%`,
+                        }}
+                        title={`Final: ${finalCount}`}
+                      />
+                    </div>
+                    <div className="flex justify-between text-[10px] text-slate-400">
+                      <span>Early ({earlyCount})</span>
+                      <span>Middle ({middleCount})</span>
+                      <span>Final ({finalCount})</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Rotation Summary button */}
                 {evals > 0 && (
                   <div className="mt-3 flex justify-end">
                     <button
