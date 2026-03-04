@@ -205,7 +205,7 @@ export function RotationSummary() {
   );
 }
 
-// Optional shared benchmarks UI
+// Benchmarks UI used inside each phase section (for middle/final)
 function BenchmarksDetails({ phaseTitle }: { phaseTitle: string }) {
   const isMiddle = phaseTitle.includes('Middle');
   const isFinal = phaseTitle.includes('Final');
