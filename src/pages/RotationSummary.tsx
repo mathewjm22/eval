@@ -9,6 +9,14 @@ function evalHasRedFlag(ev: SessionEvaluation): boolean {
   return Object.values(rf).some(v => v && v.status === 'redFlag');
 }
 
+// Helper: time windows around formal mid-year / final
+function isMidYearWindow(weekNumber: number) {
+  return weekNumber >= 13 && weekNumber <= 16;
+}
+function isFinalWindow(weekNumber: number) {
+  return weekNumber >= 31 && weekNumber <= 34;
+}
+
 export function RotationSummary() {
   const { studentId } = useParams<{ studentId: string }>();
   const { data } = useAppData();
@@ -40,6 +48,15 @@ export function RotationSummary() {
 
   const totalRedFlags = useMemo(
     () => studentEvals.filter(ev => evalHasRedFlag(ev)).length,
+    [studentEvals],
+  );
+
+  const ratingTrend = useMemo(
+    () =>
+      studentEvals.map(ev => ({
+        date: ev.date,
+        rating: ev.overallRating,
+      })),
     [studentEvals],
   );
 
@@ -81,7 +98,7 @@ export function RotationSummary() {
         </div>
       </div>
 
-      {/* High-level stats */}
+      {/* High-level stats + trend */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="rounded-2xl bg-slate-900 border border-slate-800 p-4">
           <p className="text-xs text-slate-400">Total evaluations</p>
@@ -109,6 +126,59 @@ export function RotationSummary() {
             </span>
           </div>
         </div>
+
+        {/* Overall rating trend sparkline (full-width card) */}
+        {ratingTrend.length > 1 && (
+          <div className="md:col-span-3 rounded-2xl bg-slate-900 border border-slate-800 p-4">
+            <p className="text-xs text-slate-400 mb-2">Overall Rating Trend</p>
+            <div className="h-20 w-full">
+              <svg viewBox="0 0 100 40" className="w-full h-full">
+                {(() => {
+                  const maxRating = 5;
+                  const minRating = 1;
+                  const span = Math.max(ratingTrend.length - 1, 1);
+                  const points = ratingTrend.map((pt, idx) => {
+                    const x = (idx / span) * 100;
+                    const normalized =
+                      (pt.rating - minRating) / (maxRating - minRating || 1);
+                    const y = 40 - normalized * 30 - 5; // padding
+                    return `${x},${y}`;
+                  });
+                  const polyline = points.join(' ');
+                  return (
+                    <>
+                      <polyline
+                        points={polyline}
+                        fill="none"
+                        stroke="#4ade80"
+                        strokeWidth="1.5"
+                      />
+                      {ratingTrend.map((pt, idx) => {
+                        const x = (idx / span) * 100;
+                        const normalized =
+                          (pt.rating - minRating) /
+                          (maxRating - minRating || 1);
+                        const y = 40 - normalized * 30 - 5;
+                        return (
+                          <circle
+                            key={pt.date + idx}
+                            cx={x}
+                            cy={y}
+                            r={1.2}
+                            fill="#22c55e"
+                          />
+                        );
+                      })}
+                    </>
+                  );
+                })()}
+              </svg>
+            </div>
+            <p className="mt-1 text-[11px] text-slate-400">
+              Left = earliest evaluation • Right = most recent
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Phase sections */}
@@ -174,6 +244,9 @@ function PhaseSection({
         {evaluations.map(ev => {
           const hasRedFlag = evalHasRedFlag(ev);
           const phaseConf = PHASE_CONFIG[ev.phase];
+          const midWindow = isMidYearWindow(ev.weekNumber) && ev.phase === 'middle';
+          const finalWindow =
+            isFinalWindow(ev.weekNumber) && ev.phase === 'final';
 
           return (
             <button
@@ -193,11 +266,23 @@ function PhaseSection({
                 <span className="text-[11px] text-slate-300">
                   {ev.date} • {ev.patientEncounters} patients
                 </span>
-                {hasRedFlag && (
-                  <span className="text-[11px] text-rose-200 font-medium">
-                    ⚠️ Red-flag concerns documented in Internal Medicine benchmarks
-                  </span>
-                )}
+                <div className="flex flex-wrap gap-1 mt-0.5">
+                  {hasRedFlag && (
+                    <span className="text-[11px] text-rose-200 font-medium">
+                      ⚠️ Red-flag concerns documented in Internal Medicine benchmarks
+                    </span>
+                  )}
+                  {midWindow && (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-sky-900/40 text-sky-200 border border-sky-500/60">
+                      Mid-year window
+                    </span>
+                  )}
+                  {finalWindow && (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-violet-900/40 text-violet-200 border border-violet-500/60">
+                      Final window
+                    </span>
+                  )}
+                </div>
               </div>
               <div className="flex flex-col items-end gap-1 shrink-0">
                 <span
