@@ -34,6 +34,65 @@ export function EvaluationsList() {
     if (expandedId === id) setExpandedId(null);
   };
 
+  // inside expanded card render
+const rf = ev.redFlagBenchmarks;
+
+const hasAnyRedFlagInfo =
+  rf &&
+  Object.values(rf).some(
+    v => v && (v.status === 'redFlag' || v.status === 'unsure' || (v.plan ?? '').trim() !== ''),
+  );
+
+{hasAnyRedFlagInfo && (
+  <div className="bg-rose-50 rounded-xl p-4 border border-rose-200 space-y-3">
+    <h4 className="font-semibold text-rose-800 text-sm">
+      Internal Medicine Benchmarks – Red Flags (Mid-Year / End-of-Rotation)
+    </h4>
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+      {RED_FLAG_COMPETENCIES.map(comp => {
+        const val = rf?.[comp.key];
+        if (!val) return null;
+        if (
+          val.status === 'none' &&
+          (!val.plan || val.plan.trim() === '')
+        ) {
+          return null;
+        }
+
+        const statusLabel =
+          val.status === 'redFlag'
+            ? 'Red Flags Observed'
+            : val.status === 'unsure'
+            ? 'Unsure'
+            : 'No Concerns';
+
+        const statusColor =
+          val.status === 'redFlag'
+            ? 'bg-rose-600 text-white'
+            : val.status === 'unsure'
+            ? 'bg-amber-500 text-white'
+            : 'bg-emerald-500 text-white';
+
+        return (
+          <div key={comp.key} className="bg-white rounded-lg border border-rose-100 p-3 space-y-1.5">
+            <div className="flex items-center justify-between gap-2">
+              <p className="font-semibold text-slate-800 text-xs">{comp.label}</p>
+              <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${statusColor}`}>
+                {statusLabel}
+              </span>
+            </div>
+            {val.plan && val.plan.trim() && (
+              <p className="text-[11px] text-slate-600 whitespace-pre-wrap">
+                {val.plan}
+              </p>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  </div>
+)}
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
