@@ -11,6 +11,7 @@ const NAV_ITEMS = [
   { path: "/evaluate", label: "New Evaluation" },
   { path: "/evaluations", label: "All Evaluations" },
   { path: "/progress", label: "Progress View" },
+  { path: "/calendar", label: "Calendar" },   // NEW
   { path: "/settings", label: "Settings" },
 ];
 
@@ -324,6 +325,7 @@ function getPageTitle(pathname: string): string {
   if (pathname.startsWith("/evaluate")) return "New Evaluation";
   if (pathname.startsWith("/evaluations")) return "Evaluations";
   if (pathname.startsWith("/progress")) return "Progress View";
+  if (pathname.startsWith("/calendar")) return "Evaluation Calendar"; // NEW
   if (pathname.startsWith("/settings")) return "Settings";
   return "Medical Preceptor Evaluation Tracker";
 }
