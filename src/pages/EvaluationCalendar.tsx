@@ -23,7 +23,6 @@ function formatISO(d: Date): string {
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-// Helper: does this evaluation have any red-flag benchmarks?
 function evalHasRedFlag(ev: SessionEvaluation): boolean {
   const rf = ev.redFlagBenchmarks;
   if (!rf) return false;
@@ -33,19 +32,19 @@ function evalHasRedFlag(ev: SessionEvaluation): boolean {
 export function EvaluationCalendar() {
   const { data } = useAppData();
   const navigate = useNavigate();
+
   const [currentMonth, setCurrentMonth] = useState<Date>(() => {
-    // Default to month of most recent evaluation, or today
     if (data.evaluations.length > 0) {
       const latest = [...data.evaluations].sort(
-        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
       )[0];
       return new Date(latest.date);
     }
     return new Date();
   });
+
   const [selectedDateIso, setSelectedDateIso] = useState<string | null>(null);
 
-  // Map date -> list of evaluations
   const evaluationsByDate = useMemo(() => {
     const map = new Map<string, SessionEvaluation[]>();
     for (const ev of data.evaluations) {
@@ -56,38 +55,29 @@ export function EvaluationCalendar() {
     return map;
   }, [data.evaluations]);
 
-  // Build calendar grid for currentMonth
   const days: CalendarDay[] = useMemo(() => {
     const start = startOfMonth(currentMonth);
     const month = start.getMonth();
     const year = start.getFullYear();
 
-    const firstWeekday = start.getDay(); // 0-6
+    const firstWeekday = start.getDay();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
 
     const grid: CalendarDay[] = [];
 
-    // Days from previous month to fill first week
+    // Leading days (previous month)
     for (let i = 0; i < firstWeekday; i++) {
       const d = new Date(year, month, i - firstWeekday + 1);
-      grid.push({
-        date: d,
-        iso: formatISO(d),
-        inCurrentMonth: false,
-      });
+      grid.push({ date: d, iso: formatISO(d), inCurrentMonth: false });
     }
 
-    // Current month days
+    // Current month
     for (let day = 1; day <= daysInMonth; day++) {
       const d = new Date(year, month, day);
-      grid.push({
-        date: d,
-        iso: formatISO(d),
-        inCurrentMonth: true,
-      });
+      grid.push({ date: d, iso: formatISO(d), inCurrentMonth: true });
     }
 
-    // Fill remaining cells to complete 6 weeks (6 * 7 = 42)
+    // Trailing days to make 6 weeks
     while (grid.length < 42) {
       const last = grid[grid.length - 1].date;
       const d = new Date(last.getFullYear(), last.getMonth(), last.getDate() + 1);
@@ -101,21 +91,21 @@ export function EvaluationCalendar() {
     return grid;
   }, [currentMonth]);
 
-  const monthLabel = useMemo(() => {
-    return currentMonth.toLocaleDateString(undefined, {
-      month: 'long',
-      year: 'numeric',
-    });
-  }, [currentMonth]);
+  const monthLabel = useMemo(
+    () =>
+      currentMonth.toLocaleDateString(undefined, {
+        month: 'long',
+        year: 'numeric',
+      }),
+    [currentMonth]
+  );
 
   const selectedEvals =
     selectedDateIso && evaluationsByDate.get(selectedDateIso)
       ? evaluationsByDate.get(selectedDateIso)!
       : [];
 
-  const selectedPhases = new Set(
-    selectedEvals.map(ev => ev.phase),
-  );
+  const selectedPhases = new Set(selectedEvals.map(ev => ev.phase));
 
   return (
     <div className="space-y-6">
@@ -208,9 +198,7 @@ export function EvaluationCalendar() {
                 }
               >
                 <div className="w-full flex justify-between items-center text-[11px]">
-                  <span className="font-semibold">
-                    {day.date.getDate()}
-                  </span>
+                  <span className="font-semibold">{day.date.getDate()}</span>
                   {isToday && (
                     <span className="text-[10px] text-sky-300 font-medium">
                       Today
@@ -264,9 +252,101 @@ export function EvaluationCalendar() {
               </p>
             </div>
             <div className="flex items-center gap-2">
-              {/* Phase chips */}
               {selectedPhases.has('early') && (
                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 border border-blue-200">
                   Early
-*
-
+                </span>
+              )}
+              {selectedPhases.has('middle') && (
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 border border-amber-200">
+                  Middle
+                </span>
+              )}
+              {selectedPhases.has('final') && (
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 border border-emerald-200">
+                  Final
+                </span>
+              )}
+              <button
+                type="button"
+                onClick={() => setSelectedDateIso(null)}
+                className="text-xs text-slate-500 hover:text-slate-700 ml-1"
+              >
+                Clear
+              </button>
+            </div>
+          </div>
+
+          {selectedEvals.length === 0 ? (
+            <p className="text-sm text-slate-500">
+              No evaluations found on this date.
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {selectedEvals
+                .slice()
+                .sort(
+                  (a, b) =>
+                    new Date(a.date).getTime() - new Date(b.date).getTime()
+                )
+                .map(ev => {
+                  const student =
+                    data.students.find(s => s.id === ev.studentId)?.name ||
+                    'Unknown student';
+                  const phaseConf = PHASE_CONFIG[ev.phase];
+                  const hasRedFlag = evalHasRedFlag(ev);
+
+                  return (
+                    <button
+                      key={ev.id}
+                      type="button"
+                      onClick={() => navigate(`/evaluations/${ev.id}`)}
+                      className={`w-full text-left rounded-xl px-3 py-2.5 flex items-center justify-between gap-3 transition-colors border ${
+                        hasRedFlag
+                          ? 'bg-rose-900 border-rose-700 hover:border-rose-400 hover:bg-rose-800'
+                          : 'bg-slate-900 border-slate-700 hover:border-indigo-400 hover:bg-slate-800'
+                      }`}
+                    >
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-sm font-semibold text-slate-50">
+                          {student}
+                        </span>
+                        <span className="text-[11px] text-slate-300">
+                          {ev.sessionType} • {ev.patientEncounters} patients
+                        </span>
+                        {hasRedFlag && (
+                          <span className="text-[10px] text-rose-200 font-medium">
+                            ⚠️ Red-flag concerns documented
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span
+                          className={`hidden sm:inline-block text-[10px] px-2 py-0.5 rounded-full font-medium ${phaseConf.bgColor} ${phaseConf.color} border ${phaseConf.borderColor}`}
+                        >
+                          {phaseConf.label}
+                        </span>
+                        <span
+                          className={`text-sm font-bold ${
+                            hasRedFlag
+                              ? 'text-rose-300'
+                              : ev.overallRating >= 4
+                              ? 'text-emerald-300'
+                              : ev.overallRating >= 3
+                              ? 'text-amber-300'
+                              : 'text-rose-300'
+                          }`}
+                        >
+                          {ev.overallRating}/5 ⭐
+                        </span>
+                      </div>
+                    </button>
+                  );
+                })}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
