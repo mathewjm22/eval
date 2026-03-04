@@ -814,73 +814,96 @@ export function EvaluateSession() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {RED_FLAG_COMPETENCIES.map(comp => {
-                  const value =
-                    form.redFlagBenchmarks?.[comp.key] || ({
-                      status: 'none',
-                      plan: '',
-                    } as RedFlagPlan);
+  const value =
+    form.redFlagBenchmarks?.[comp.key] || ({
+      status: 'none',
+      plan: '',
+    } as RedFlagPlan);
 
-                  return (
-                    <div
-                      key={comp.key}
-                      className="bg-white rounded-xl border border-rose-100 p-3 space-y-2"
-                    >
-                      <p className="text-sm font-semibold text-slate-800">
-                        {comp.label}
-                      </p>
+  const details = RED_FLAG_DETAILS[comp.key];
 
-                      {/* Status buttons */}
-                      <div className="flex flex-wrap gap-2 text-xs">
-                        {[
-                          { id: 'none', label: 'No Concerns' },
-                          { id: 'redFlag', label: 'Red Flags Observed' },
-                          { id: 'unsure', label: 'Unsure' },
-                        ].map(opt => (
-                          <button
-                            key={opt.id}
-                            type="button"
-                            onClick={() =>
-                              updateRedFlagBenchmark(comp.key, {
-                                status: opt.id as RedFlagStatus,
-                              })
-                            }
-                            className={`px-2.5 py-1 rounded-full border text-xs font-medium transition ${
-                              value.status === opt.id
-                                ? 'bg-rose-600 text-white border-rose-600'
-                                : 'bg-white text-slate-600 border-slate-200 hover:border-rose-300'
-                            }`}
-                          >
-                            {opt.label}
-                          </button>
-                        ))}
-                      </div>
+  return (
+    <div
+      key={comp.key}
+      className="bg-slate-900 rounded-xl border border-rose-100 p-3 space-y-3"
+    >
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-sm font-semibold text-slate-50">
+          {comp.label}
+        </p>
+      </div>
 
-                      {/* Plan textarea for redFlag / unsure */}
-                      {(value.status === 'redFlag' ||
-                        value.status === 'unsure') && (
-                        <div className="space-y-1">
-                          <label className="text-[11px] font-medium text-slate-600">
-                            Planned follow-up / actions
-                            <span className="text-slate-400 font-normal">
-                              {' '}
-                              (optional)
-                            </span>
-                          </label>
-                          <textarea
-                            className="w-full text-xs rounded-lg border border-slate-200 px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-rose-400/60 focus:border-rose-400 resize-vertical min-h-[60px]"
-                            placeholder="E.g., schedule meeting with student, discuss with LIC director, increase observation, etc."
-                            value={value.plan}
-                            onChange={e =>
-                              updateRedFlagBenchmark(comp.key, {
-                                plan: e.target.value,
-                              })
-                            }
-                          />
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
+      {/* Red-flag description bullets */}
+      {details && (
+        <div className="space-y-1">
+          <p className="text-[11px] font-semibold text-slate-300 uppercase tracking-wide">
+            Red Flags (examples)
+          </p>
+          <ul className="list-disc list-inside space-y-0.5 text-[11px] text-slate-200">
+            {details.redFlags.map((item, i) => (
+              <li key={i}>{item}</li>
+            ))}
+          </ul>
+
+          <p className="text-[11px] font-semibold text-slate-300 uppercase tracking-wide mt-2">
+            If Red Flags are Observed
+          </p>
+          <ul className="list-disc list-inside space-y-0.5 text-[11px] text-slate-200">
+            {details.actions.map((item, i) => (
+              <li key={i}>{item}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Status buttons */}
+      <div className="flex flex-wrap gap-2 text-xs pt-2">
+        {[
+          { id: 'none', label: 'No Concerns' },
+          { id: 'redFlag', label: 'Red Flags Observed' },
+          { id: 'unsure', label: 'Unsure' },
+        ].map(opt => (
+          <button
+            key={opt.id}
+            type="button"
+            onClick={() =>
+              updateRedFlagBenchmark(comp.key, {
+                status: opt.id as RedFlagStatus,
+              })
+            }
+            className={`px-2.5 py-1 rounded-full border text-xs font-medium transition ${
+              value.status === opt.id
+                ? 'bg-rose-600 text-white border-rose-600'
+                : 'bg-slate-800 text-slate-100 border-slate-600 hover:border-rose-300'
+            }`}
+          >
+            {opt.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Plan textarea for redFlag / unsure */}
+      {(value.status === 'redFlag' || value.status === 'unsure') && (
+        <div className="space-y-1 pt-1">
+          <label className="text-[11px] font-medium text-slate-200">
+            Planned follow-up / actions
+            <span className="text-slate-400 font-normal"> (optional)</span>
+          </label>
+          <textarea
+            className="w-full text-xs rounded-lg border border-slate-600 bg-slate-950/60 text-slate-100 px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-rose-400/60 focus:border-rose-400 resize-vertical min-h-[60px]"
+            placeholder="E.g., schedule meeting with student, discuss with LIC director, increase observation, etc."
+            value={value.plan}
+            onChange={e =>
+              updateRedFlagBenchmark(comp.key, {
+                plan: e.target.value,
+              })
+            }
+          />
+        </div>
+      )}
+    </div>
+  );
+})}
               </div>
             </div>
           )}
