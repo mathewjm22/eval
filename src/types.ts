@@ -25,6 +25,8 @@ export interface TeachingTopic {
   topics: string[];
 }
 
+// ─── Internal Medicine Red-Flag Benchmarks ───────────────────────────────────
+
 export type RedFlagStatus = 'none' | 'redFlag' | 'unsure';
 
 export interface RedFlagPlan {
@@ -73,7 +75,7 @@ export interface SessionEvaluation {
   teachingTopics?: TeachingTopic[];
   objectivesAchieved?: (string | number)[];
 
-  // NEW: internal-medicine benchmark red flag tracking (preceptor-only)
+  // Internal-medicine benchmark red flag tracking (preceptor-only)
   redFlagBenchmarks?: {
     medicalKnowledge?: RedFlagPlan;
     clinicalReasoning?: RedFlagPlan;
@@ -81,7 +83,6 @@ export interface SessionEvaluation {
     interpersonalCommunication?: RedFlagPlan;
   };
 }
-
 
 export interface AppData {
   preceptor: PreceptorProfile;
@@ -110,25 +111,6 @@ export const DEFAULT_SCORES: Record<string, number> = {
   criticalThinking: 3,
   teamwork: 3,
 };
-
-export const RED_FLAG_COMPETENCIES = [
-  {
-    key: 'medicalKnowledge' as const,
-    label: 'Medical Knowledge',
-  },
-  {
-    key: 'clinicalReasoning' as const,
-    label: 'Clinical Reasoning',
-  },
-  {
-    key: 'communicationEmotional' as const,
-    label: 'Communication & Emotional Intelligence',
-  },
-  {
-    key: 'interpersonalCommunication' as const,
-    label: 'Interpersonal & Communication Skills',
-  },
-];
 
 export const SCORE_CATEGORIES: {
   key: string;
@@ -533,7 +515,4 @@ export const CLINICAL_SKILLS: ClinicalSkill[] = [
       { id: 'communication-skills-ex-3', description: 'Ensures mutual understanding using teach-back and open-ended questions' },
     ],
   },
-
 ];
-
-
