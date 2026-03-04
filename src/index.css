@@ -84,6 +84,24 @@ a {
   outline-offset: 2px;
 }
 
+/* Improve native select dropdown readability in dark mode */
+select {
+  color: #0f172a;            /* slate-900 text inside the closed control */
+  background-color: #ffffff; /* white control background */
+}
+
+/* On dark theme, force dropdown list text to stay dark on light background */
+:root[data-theme='dark'] select {
+  color: #0f172a;
+  background-color: #f9fafb; /* slate-50 */
+}
+
+/* Optional: ensure the system dropdown list uses dark text on light bg */
+select option {
+  color: #0f172a;
+  background-color: #ffffff;
+}
+
 /* -----------------------------------------
    Dark-mode compatibility layer
    Fixes existing pages that still use:
