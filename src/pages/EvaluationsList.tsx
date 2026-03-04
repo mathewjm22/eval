@@ -1,7 +1,21 @@
 import { useState, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAppData } from '../context';
-import { PHASE_CONFIG, SCORE_CATEGORIES, SCORE_LABELS, RED_FLAG_COMPETENCIES } from '../types';
+import { PHASE_CONFIG, SCORE_CATEGORIES, SCORE_LABELS, RED_FLAG_COMPETENCIES, SessionEvaluation } from '../types';
+
+// helper shared logic
+function evalHasRedFlag(ev: SessionEvaluation) {
+  const rf = ev.redFlagBenchmarks;
+  if (!rf) return false;
+  return Object.values(rf).some(v => v && v.status === 'redFlag');
+}
+
+function isMidYearWindow(weekNumber: number) {
+  return weekNumber >= 13 && weekNumber <= 16;
+}
+function isFinalWindow(weekNumber: number) {
+  return weekNumber >= 31 && weekNumber <= 34;
+}
 
 export function EvaluationsList() {
   const { data, deleteEvaluation } = useAppData();
@@ -12,15 +26,20 @@ export function EvaluationsList() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  const getStudentName = (id: string) => data.students.find(s => s.id === id)?.name || 'Unknown';
+  const getStudentName = (id: string) =>
+    data.students.find(s => s.id === id)?.name || 'Unknown';
 
   const filtered = useMemo(() => {
     let evals = [...data.evaluations];
-    if (filterStudent !== 'all') evals = evals.filter(e => e.studentId === filterStudent);
+    if (filterStudent !== 'all')
+      evals = evals.filter(e => e.studentId === filterStudent);
     if (filterPhase !== 'all') evals = evals.filter(e => e.phase === filterPhase);
 
     evals.sort((a, b) => {
-      if (sortBy === 'date') return new Date(b.date).getTime() - new Date(a.date).getTime();
+      if (sortBy === 'date')
+        return (
+          new Date(b.date).getTime() - new Date(a.date).getTime()
+        );
       if (sortBy === 'week') return b.weekNumber - a.weekNumber;
       return b.overallRating - a.overallRating;
     });
@@ -40,7 +59,8 @@ export function EvaluationsList() {
         <div>
           <h2 className="text-2xl font-bold text-slate-800">📋 All Evaluations</h2>
           <p className="text-sm text-slate-400 mt-1">
-            {filtered.length} evaluation{filtered.length !== 1 ? 's' : ''} found
+            {filtered.length} evaluation
+            {filtered.length !== 1 ? 's' : ''} found
           </p>
         </div>
         <Link
@@ -55,7 +75,9 @@ export function EvaluationsList() {
       <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
         <div className="flex flex-wrap gap-4">
           <div className="flex-1 min-w-[150px]">
-            <label className="block text-xs font-medium text-slate-500 mb-1">Student</label>
+            <label className="block text-xs font-medium text-slate-500 mb-1">
+              Student
+            </label>
             <select
               value={filterStudent}
               onChange={e => setFilterStudent(e.target.value)}
@@ -63,12 +85,16 @@ export function EvaluationsList() {
             >
               <option value="all">All Students</option>
               {data.students.map(s => (
-                <option key={s.id} value={s.id}>{s.name}</option>
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
               ))}
             </select>
           </div>
           <div className="flex-1 min-w-[150px]">
-            <label className="block text-xs font-medium text-slate-500 mb-1">Phase</label>
+            <label className="block text-xs font-medium text-slate-500 mb-1">
+              Phase
+            </label>
             <select
               value={filterPhase}
               onChange={e => setFilterPhase(e.target.value)}
@@ -81,10 +107,14 @@ export function EvaluationsList() {
             </select>
           </div>
           <div className="flex-1 min-w-[150px]">
-            <label className="block text-xs font-medium text-slate-500 mb-1">Sort By</label>
+            <label className="block text-xs font-medium text-slate-500 mb-1">
+              Sort By
+            </label>
             <select
               value={sortBy}
-              onChange={e => setSortBy(e.target.value as 'date' | 'week' | 'rating')}
+              onChange={e =>
+                setSortBy(e.target.value as 'date' | 'week' | 'rating')
+              }
               className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none"
             >
               <option value="date">Date (Newest)</option>
@@ -99,7 +129,9 @@ export function EvaluationsList() {
       {filtered.length === 0 ? (
         <div className="bg-white rounded-2xl border-2 border-dashed border-slate-200 p-12 text-center">
           <div className="text-5xl mb-4">📋</div>
-          <h3 className="text-lg font-semibold text-slate-700">No evaluations found</h3>
+          <h3 className="text-lg font-semibold text-slate-700">
+            No evaluations found
+          </h3>
           <p className="text-sm text-slate-400 mt-2">
             {data.evaluations.length === 0
               ? 'Create your first evaluation to see it here.'
@@ -108,13 +140,19 @@ export function EvaluationsList() {
         </div>
       ) : (
         <div className="space-y-3">
-          {filtered.map((ev) => {
+          {filtered.map(ev => {
             const phaseConf = PHASE_CONFIG[ev.phase];
             const isExpanded = expandedId === ev.id;
             const scoreAvg = (
-              (Object.values(ev.scores) as number[]).reduce((a, b) => a + b, 0) /
-              Object.values(ev.scores).length
+              (Object.values(ev.scores) as number[]).reduce(
+                (a, b) => a + b,
+                0,
+              ) / Object.values(ev.scores).length
             ).toFixed(1);
+            const hasRedFlag = evalHasRedFlag(ev);
+            const midWindow = isMidYearWindow(ev.weekNumber) && ev.phase === 'middle';
+            const finalWindow =
+              isFinalWindow(ev.weekNumber) && ev.phase === 'final';
 
             // Red-flag info for this evaluation
             const rf = ev.redFlagBenchmarks;
@@ -135,7 +173,9 @@ export function EvaluationsList() {
               >
                 <div
                   className="p-4 sm:p-5 cursor-pointer flex items-center justify-between gap-4"
-                  onClick={() => setExpandedId(isExpanded ? null : ev.id)}
+                  onClick={() =>
+                    setExpandedId(isExpanded ? null : ev.id)
+                  }
                 >
                   <div className="flex items-center gap-4 flex-1 min-w-0">
                     <div className="w-11 h-11 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold text-sm shrink-0">
@@ -146,16 +186,36 @@ export function EvaluationsList() {
                         {getStudentName(ev.studentId)}
                       </p>
                       <p className="text-xs text-slate-400 mt-0.5">
-                        {ev.date} • {ev.sessionType} • {ev.patientEncounters} patients
+                        {ev.date} • {ev.sessionType} •{' '}
+                        {ev.patientEncounters} patients
                       </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3 shrink-0">
-                    <span
-                      className={`hidden sm:inline-block text-xs px-2.5 py-1 rounded-full font-medium ${phaseConf.bgColor} ${phaseConf.color} border ${phaseConf.borderColor}`}
-                    >
-                      {phaseConf.label}
-                    </span>
+                    <div className="flex flex-col items-end gap-1">
+                      <div className="flex items-center gap-1">
+                        <span
+                          className={`hidden sm:inline-block text-xs px-2.5 py-1 rounded-full font-medium ${phaseConf.bgColor} ${phaseConf.color} border ${phaseConf.borderColor}`}
+                        >
+                          {phaseConf.label}
+                        </span>
+                        {midWindow && (
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-sky-100 text-sky-700 border border-sky-200">
+                            Mid-year window
+                          </span>
+                        )}
+                        {finalWindow && (
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-violet-100 text-violet-700 border border-violet-200">
+                            Final window
+                          </span>
+                        )}
+                      </div>
+                      {hasRedFlag && (
+                        <span className="text-[10px] text-rose-500">
+                          ⚠️ Red-flag concerns
+                        </span>
+                      )}
+                    </div>
                     <span
                       className={`text-lg font-bold ${
                         ev.overallRating >= 4
@@ -220,7 +280,9 @@ export function EvaluationsList() {
                       </div>
                       <p className="text-center mt-3 text-sm text-slate-500">
                         Average:{' '}
-                        <span className="font-bold text-indigo-600">{scoreAvg}/5</span>
+                        <span className="font-bold text-indigo-600">
+                          {scoreAvg}/5
+                        </span>
                       </p>
                     </div>
 
@@ -329,9 +391,9 @@ export function EvaluationsList() {
                     {/* Actions */}
                     <div className="flex gap-2 pt-2">
                       <button
-                        onClick={(e) => {
+                        onClick={e => {
                           e.stopPropagation();
-                          navigate(`/evaluate/${ev.id}`);
+                          navigate(`/evaluations/${ev.id}`);
                         }}
                         className="px-4 py-2 rounded-lg text-sm font-medium bg-indigo-100 text-indigo-700 hover:bg-indigo-200 transition-colors"
                       >
@@ -340,7 +402,7 @@ export function EvaluationsList() {
                       {showDeleteConfirm === ev.id ? (
                         <div className="flex gap-1">
                           <button
-                            onClick={(e) => {
+                            onClick={e => {
                               e.stopPropagation();
                               handleDelete(ev.id);
                             }}
@@ -349,7 +411,7 @@ export function EvaluationsList() {
                             Confirm Delete
                           </button>
                           <button
-                            onClick={(e) => {
+                            onClick={e => {
                               e.stopPropagation();
                               setShowDeleteConfirm(null);
                             }}
@@ -360,7 +422,7 @@ export function EvaluationsList() {
                         </div>
                       ) : (
                         <button
-                          onClick={(e) => {
+                          onClick={e => {
                             e.stopPropagation();
                             setShowDeleteConfirm(ev.id);
                           }}
