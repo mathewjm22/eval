@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
+import { useNavigate } from 'react-router-dom';
 import { useAppData } from '../context';
 import { StudentProfile } from '../types';
 
@@ -15,6 +16,7 @@ const EMPTY_FORM: Omit<StudentProfile, 'id'> = {
 
 export function Students() {
   const { data, addStudent, updateStudent, deleteStudent } = useAppData();
+  const navigate = useNavigate();
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<Omit<StudentProfile, 'id'>>(EMPTY_FORM);
@@ -56,7 +58,9 @@ export function Students() {
       <div className="flex items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-slate-800">👥 Students</h2>
-          <p className="text-sm text-slate-400 mt-1">{data.students.length} student{data.students.length !== 1 ? 's' : ''} enrolled</p>
+          <p className="text-sm text-slate-400 mt-1">
+            {data.students.length} student{data.students.length !== 1 ? 's' : ''} enrolled
+          </p>
         </div>
         <button
           onClick={openAdd}
@@ -69,10 +73,14 @@ export function Students() {
       {/* Add / Edit Form */}
       {showForm && (
         <div className="bg-white rounded-2xl border border-indigo-200 p-6 shadow-sm space-y-4">
-          <h3 className="font-bold text-slate-800 text-lg">{editingId ? '✏️ Edit Student' : '➕ Add New Student'}</h3>
+          <h3 className="font-bold text-slate-800 text-lg">
+            {editingId ? '✏️ Edit Student' : '➕ Add New Student'}
+          </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="sm:col-span-2">
-              <label className="block text-sm font-medium text-slate-700 mb-1">Full Name *</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                Full Name *
+              </label>
               <input
                 type="text"
                 value={form.name}
@@ -82,27 +90,37 @@ export function Students() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Program</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                Program
+              </label>
               <select
                 value={form.program}
                 onChange={e => setForm(f => ({ ...f, program: e.target.value }))}
                 className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none"
               >
-                {PROGRAMS.map(p => <option key={p}>{p}</option>)}
+                {PROGRAMS.map(p => (
+                  <option key={p}>{p}</option>
+                ))}
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Year Level</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                Year Level
+              </label>
               <select
                 value={form.yearLevel}
                 onChange={e => setForm(f => ({ ...f, yearLevel: e.target.value }))}
                 className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none"
               >
-                {YEAR_LEVELS.map(y => <option key={y}>{y}</option>)}
+                {YEAR_LEVELS.map(y => (
+                  <option key={y}>{y}</option>
+                ))}
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Rotation Start Date</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                Rotation Start Date
+              </label>
               <input
                 type="date"
                 value={form.startDate}
@@ -120,7 +138,10 @@ export function Students() {
               {editingId ? 'Update Student' : 'Save Student'}
             </button>
             <button
-              onClick={() => { setShowForm(false); setEditingId(null); }}
+              onClick={() => {
+                setShowForm(false);
+                setEditingId(null);
+              }}
               className="px-5 py-2.5 rounded-xl text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors"
             >
               Cancel
@@ -133,9 +154,16 @@ export function Students() {
       {data.students.length === 0 ? (
         <div className="bg-white rounded-2xl border-2 border-dashed border-slate-200 p-12 text-center">
           <div className="text-5xl mb-4">👥</div>
-          <h3 className="text-lg font-semibold text-slate-700">No Students Yet</h3>
-          <p className="text-sm text-slate-400 mt-2 mb-6">Add your first student to get started with evaluations.</p>
-          <button onClick={openAdd} className="bg-indigo-600 text-white px-6 py-2.5 rounded-xl font-medium text-sm hover:bg-indigo-700 transition-colors">
+          <h3 className="text-lg font-semibold text-slate-700">
+            No Students Yet
+          </h3>
+          <p className="text-sm text-slate-400 mt-2 mb-6">
+            Add your first student to get started with evaluations.
+          </p>
+          <button
+            onClick={openAdd}
+            className="bg-indigo-600 text-white px-6 py-2.5 rounded-xl font-medium text-sm hover:bg-indigo-700 transition-colors"
+          >
             Add First Student
           </button>
         </div>
@@ -144,15 +172,22 @@ export function Students() {
           {data.students.map(s => {
             const evals = evalCountFor(s.id);
             return (
-              <div key={s.id} className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm hover:shadow-md transition-shadow">
+              <div
+                key={s.id}
+                className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm hover:shadow-md transition-shadow"
+              >
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-3 min-w-0">
                     <div className="w-11 h-11 bg-gradient-to-br from-indigo-400 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-lg shrink-0">
                       {s.name.charAt(0).toUpperCase()}
                     </div>
                     <div className="min-w-0">
-                      <p className="font-bold text-slate-800 truncate">{s.name}</p>
-                      <p className="text-xs text-slate-400">{s.program} · {s.yearLevel}</p>
+                      <p className="font-bold text-slate-800 truncate">
+                        {s.name}
+                      </p>
+                      <p className="text-xs text-slate-400">
+                        {s.program} · {s.yearLevel}
+                      </p>
                     </div>
                   </div>
                   <div className="flex gap-1 shrink-0">
@@ -189,18 +224,41 @@ export function Students() {
                     )}
                   </div>
                 </div>
+
                 <div className="mt-4 flex gap-3">
                   <div className="flex-1 bg-slate-50 rounded-xl p-3 text-center">
-                    <p className="text-lg font-bold text-indigo-600">{evals}</p>
-                    <p className="text-xs text-slate-400">Evaluation{evals !== 1 ? 's' : ''}</p>
+                    <p className="text-lg font-bold text-indigo-600">
+                      {evals}
+                    </p>
+                    <p className="text-xs text-slate-400">
+                      Evaluation{evals !== 1 ? 's' : ''}
+                    </p>
                   </div>
                   <div className="flex-1 bg-slate-50 rounded-xl p-3 text-center">
-                    <p className="text-lg font-bold text-slate-600">{s.startDate}</p>
+                    <p className="text-lg font-bold text-slate-600">
+                      {s.startDate}
+                    </p>
                     <p className="text-xs text-slate-400">Start Date</p>
                   </div>
                 </div>
+
                 {evals === 0 && (
-                  <p className="text-xs text-amber-600 mt-3 text-center">No evaluations yet</p>
+                  <p className="text-xs text-amber-600 mt-3 text-center">
+                    No evaluations yet
+                  </p>
+                )}
+
+                {/* NEW: Rotation Summary button */}
+                {evals > 0 && (
+                  <div className="mt-3 flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => navigate(`/summary/${s.id}`)}
+                      className="px-3 py-1.5 rounded-xl text-xs font-semibold border border-slate-300 text-slate-700 bg-white hover:border-indigo-400 hover:text-indigo-700 hover:bg-indigo-50 transition-colors"
+                    >
+                      Rotation Summary
+                    </button>
+                  </div>
                 )}
               </div>
             );
