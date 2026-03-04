@@ -29,8 +29,27 @@ export type RedFlagStatus = 'none' | 'redFlag' | 'unsure';
 
 export interface RedFlagPlan {
   status: RedFlagStatus;
-  plan: string; // what you intend to do if redFlag/unsure
+  plan: string;
 }
+
+export const RED_FLAG_COMPETENCIES = [
+  {
+    key: 'medicalKnowledge' as const,
+    label: 'Medical Knowledge',
+  },
+  {
+    key: 'clinicalReasoning' as const,
+    label: 'Clinical Reasoning',
+  },
+  {
+    key: 'communicationEmotional' as const,
+    label: 'Communication & Emotional Intelligence',
+  },
+  {
+    key: 'interpersonalCommunication' as const,
+    label: 'Interpersonal & Communication Skills',
+  },
+];
 
 export interface SessionEvaluation {
   id: string;
@@ -516,4 +535,5 @@ export const CLINICAL_SKILLS: ClinicalSkill[] = [
   },
 
 ];
+
 
