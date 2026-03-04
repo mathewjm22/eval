@@ -14,14 +14,21 @@ import {
   CLINICAL_OBJECTIVES,
   CLINICAL_OBJECTIVES_V2,
   expectationId,
-  RED_FLAG_COMPETENCIES,   // NEW
-  RedFlagPlan,             // NEW
-  RedFlagStatus,           // NEW
+  RED_FLAG_COMPETENCIES,
+  RedFlagPlan,
+  RedFlagStatus,
 } from '../types';
 import { ScoreInput } from '../components/ScoreInput';
 
-
-const STEPS = ['Session Details', 'Diagnoses & Conditions', 'Teaching Topics', 'Clinical Objectives', 'Clinical Scores', 'Feedback & Notes', 'Review & Submit'];
+const STEPS = [
+  'Session Details',
+  'Diagnoses & Conditions',
+  'Teaching Topics',
+  'Clinical Objectives',
+  'Clinical Scores',
+  'Feedback & Notes',
+  'Review & Submit',
+];
 const LAST_STEP = STEPS.length - 1;
 
 export function EvaluateSession() {
@@ -31,56 +38,49 @@ export function EvaluateSession() {
 
   const existingEval = id ? data.evaluations.find(e => e.id === id) : null;
 
-const [form, setForm] = useState<SessionEvaluation>(() => {
-  if (existingEval) return { ...existingEval, scores: { ...existingEval.scores } };
-  return {
-    id: uuidv4(),
-    studentId: data.students[0]?.id || '',
-    date: new Date().toISOString().split('T')[0],
-    weekNumber: 1,
-    phase: 'early' as Phase,
-    sessionType: SESSION_TYPES[0],
-    patientEncounters: 0,
-    scores: { ...DEFAULT_SCORES },
-    strengths: '',
-    areasForImprovement: '',
-    actionPlan: '',
-    preceptorNotes: '',
-    overallRating: 3,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    conditionsSeen: [],
-    teachingTopics: [],
-    objectivesAchieved: [],
-    // NEW:
-    redFlagBenchmarks: {
-      medicalKnowledge: { status: 'none', plan: '' },
-      clinicalReasoning: { status: 'none', plan: '' },
-      communicationEmotional: { status: 'none', plan: '' },
-      interpersonalCommunication: { status: 'none', plan: '' },
-    },
-  };
-});
-
-  
-  
-const updateRedFlagBenchmark = (
-  key: keyof NonNullable<SessionEvaluation['redFlagBenchmarks']>,
-  patch: Partial<RedFlagPlan>,
-) => {
-  setForm(prev => ({
-    ...prev,
-    redFlagBenchmarks: {
-      ...(prev.redFlagBenchmarks || {}),
-      [key]: {
-        status: 'none',
-        plan: '',
-        ...(prev.redFlagBenchmarks?.[key] || {}),
-        ...patch,
+  const [form, setForm] = useState<SessionEvaluation>(() => {
+    if (existingEval) {
+      // Ensure redFlagBenchmarks exists even on older evaluations
+      return {
+        ...existingEval,
+        scores: { ...existingEval.scores },
+        redFlagBenchmarks: existingEval.redFlagBenchmarks || {
+          medicalKnowledge: { status: 'none', plan: '' },
+          clinicalReasoning: { status: 'none', plan: '' },
+          communicationEmotional: { status: 'none', plan: '' },
+          interpersonalCommunication: { status: 'none', plan: '' },
+        },
+      };
+    }
+    return {
+      id: uuidv4(),
+      studentId: data.students[0]?.id || '',
+      date: new Date().toISOString().split('T')[0],
+      weekNumber: 1,
+      phase: 'early' as Phase,
+      sessionType: SESSION_TYPES[0],
+      patientEncounters: 0,
+      scores: { ...DEFAULT_SCORES },
+      strengths: '',
+      areasForImprovement: '',
+      actionPlan: '',
+      preceptorNotes: '',
+      overallRating: 3,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      conditionsSeen: [],
+      customConditions: [],
+      teachingTopics: [],
+      objectivesAchieved: [],
+      redFlagBenchmarks: {
+        medicalKnowledge: { status: 'none', plan: '' },
+        clinicalReasoning: { status: 'none', plan: '' },
+        communicationEmotional: { status: 'none', plan: '' },
+        interpersonalCommunication: { status: 'none', plan: '' },
       },
-    },
-  }));
-};
+    };
+  });
+
   const [step, setStep] = useState(0);
   const [saved, setSaved] = useState(false);
   const [customConditionInput, setCustomConditionInput] = useState('');
@@ -95,6 +95,7 @@ const updateRedFlagBenchmark = (
 
   // Effective phase: manual override takes priority over auto
   const effectivePhase: Phase = form.phaseOverride || autoPhase;
+  const isMidOrFinal = effectivePhase === 'middle' || effectivePhase === 'final';
 
   const updateForm = <K extends keyof SessionEvaluation>(key: K, value: SessionEvaluation[K]) => {
     setForm(prev => ({ ...prev, [key]: value }));
@@ -102,6 +103,24 @@ const updateRedFlagBenchmark = (
 
   const updateScore = (key: keyof typeof form.scores, value: number) => {
     setForm(prev => ({ ...prev, scores: { ...prev.scores, [key]: value } }));
+  };
+
+  const updateRedFlagBenchmark = (
+    key: keyof NonNullable<SessionEvaluation['redFlagBenchmarks']>,
+    patch: Partial<RedFlagPlan>,
+  ) => {
+    setForm(prev => ({
+      ...prev,
+      redFlagBenchmarks: {
+        ...(prev.redFlagBenchmarks || {}),
+        [key]: {
+          status: 'none',
+          plan: '',
+          ...(prev.redFlagBenchmarks?.[key] || {}),
+          ...patch,
+        },
+      },
+    }));
   };
 
   const avgScore = useMemo(() => {
@@ -114,7 +133,7 @@ const updateRedFlagBenchmark = (
     return new Set(
       data.evaluations
         .filter(e => e.studentId === form.studentId && e.id !== form.id)
-        .flatMap(e => [...(e.conditionsSeen || []), ...(e.customConditions || [])])
+        .flatMap(e => [...(e.conditionsSeen || []), ...(e.customConditions || [])]),
     );
   }, [data.evaluations, form.studentId, form.id]);
 
@@ -123,7 +142,7 @@ const updateRedFlagBenchmark = (
     return new Set(
       data.evaluations
         .filter(e => e.studentId === form.studentId && e.id !== form.id)
-        .flatMap(e => e.objectivesAchieved || [])
+        .flatMap(e => e.objectivesAchieved || []),
     );
   }, [data.evaluations, form.studentId, form.id]);
 
@@ -157,7 +176,9 @@ const updateRedFlagBenchmark = (
       const newTopics = existing.topics.includes(topic)
         ? existing.topics.filter(t => t !== topic)
         : [...existing.topics, topic];
-      const updated = current.map(t => t.category === category ? { ...t, topics: newTopics } : t);
+      const updated = current.map(t =>
+        t.category === category ? { ...t, topics: newTopics } : t,
+      );
       updateForm('teachingTopics', updated.filter(t => t.topics.length > 0));
     } else {
       updateForm('teachingTopics', [...current, { category, topics: [topic] }]);
@@ -185,7 +206,11 @@ const updateRedFlagBenchmark = (
   };
 
   const handleSave = () => {
-    const updated = { ...form, phase: effectivePhase, updatedAt: new Date().toISOString() };
+    const updated = {
+      ...form,
+      phase: effectivePhase,
+      updatedAt: new Date().toISOString(),
+    };
     if (existingEval) {
       updateEvaluation(updated);
     } else {
@@ -201,7 +226,9 @@ const updateRedFlagBenchmark = (
         <div className="bg-white rounded-2xl border-2 border-dashed border-amber-200 p-12 text-center">
           <div className="text-5xl mb-4">⚠️</div>
           <h3 className="text-lg font-semibold text-slate-700">No Students Added</h3>
-          <p className="text-sm text-slate-400 mt-2 mb-6">You need to add at least one student before creating an evaluation.</p>
+          <p className="text-sm text-slate-400 mt-2 mb-6">
+            You need to add at least one student before creating an evaluation.
+          </p>
           <button
             onClick={() => navigate('/students')}
             className="bg-indigo-600 text-white px-6 py-2.5 rounded-xl font-medium text-sm hover:bg-indigo-700 transition-colors"
@@ -260,19 +287,25 @@ const updateRedFlagBenchmark = (
         <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-5">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Student *</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                Student *
+              </label>
               <select
                 value={form.studentId}
                 onChange={e => updateForm('studentId', e.target.value)}
                 className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none"
               >
                 {data.students.map(s => (
-                  <option key={s.id} value={s.id}>{s.name}</option>
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
                 ))}
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Date *</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                Date *
+              </label>
               <input
                 type="date"
                 value={form.date}
@@ -281,26 +314,39 @@ const updateRedFlagBenchmark = (
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Week Number (1-52)</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                Week Number (1-52)
+              </label>
               <input
                 type="number"
                 min={1}
                 max={52}
                 value={form.weekNumber}
-                onChange={e => updateForm('weekNumber', parseInt(e.target.value) || 1)}
+                onChange={e =>
+                  updateForm('weekNumber', parseInt(e.target.value) || 1)
+                }
                 className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none"
               />
               <p className="text-xs mt-1">
-                <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${PHASE_CONFIG[autoPhase].bgColor} ${PHASE_CONFIG[autoPhase].color} border ${PHASE_CONFIG[autoPhase].borderColor}`}>
+                <span
+                  className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${PHASE_CONFIG[autoPhase].bgColor} ${PHASE_CONFIG[autoPhase].color} border ${PHASE_CONFIG[autoPhase].borderColor}`}
+                >
                   Auto: {PHASE_CONFIG[autoPhase].label} ({PHASE_CONFIG[autoPhase].weeks})
                 </span>
               </p>
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Phase Override</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                Phase Override
+              </label>
               <select
                 value={form.phaseOverride || ''}
-                onChange={e => updateForm('phaseOverride', e.target.value ? (e.target.value as Phase) : undefined)}
+                onChange={e =>
+                  updateForm(
+                    'phaseOverride',
+                    e.target.value ? (e.target.value as Phase) : undefined,
+                  )
+                }
                 className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none"
               >
                 <option value="">Auto (based on week)</option>
@@ -310,29 +356,42 @@ const updateRedFlagBenchmark = (
               </select>
               {form.phaseOverride && (
                 <p className="text-xs mt-1 text-amber-600">
-                  ⚠️ Manual override active — using <strong>{PHASE_CONFIG[form.phaseOverride].label}</strong> instead of auto-detected {PHASE_CONFIG[autoPhase].label}
+                  ⚠️ Manual override active — using{' '}
+                  <strong>{PHASE_CONFIG[form.phaseOverride].label}</strong> instead of
+                  auto-detected {PHASE_CONFIG[autoPhase].label}
                 </p>
               )}
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Session Type</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                Session Type
+              </label>
               <select
                 value={form.sessionType}
                 onChange={e => updateForm('sessionType', e.target.value)}
                 className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none"
               >
                 {SESSION_TYPES.map(t => (
-                  <option key={t} value={t}>{t}</option>
+                  <option key={t} value={t}>
+                    {t}
+                  </option>
                 ))}
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Patient Encounters</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                Patient Encounters
+              </label>
               <input
                 type="number"
                 min={0}
                 value={form.patientEncounters}
-                onChange={e => updateForm('patientEncounters', parseInt(e.target.value) || 0)}
+                onChange={e =>
+                  updateForm(
+                    'patientEncounters',
+                    parseInt(e.target.value) || 0,
+                  )
+                }
                 className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none"
               />
             </div>
@@ -345,14 +404,20 @@ const updateRedFlagBenchmark = (
         <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-5">
           <div>
             <h3 className="font-bold text-slate-800 text-lg">🩺 Diagnoses &amp; Conditions Seen</h3>
-            <p className="text-sm text-slate-400 mt-1">Check all conditions encountered during this session.</p>
+            <p className="text-sm text-slate-400 mt-1">
+              Check all conditions encountered during this session.
+            </p>
             {previousConditions.size > 0 && (
-              <p className="text-xs text-emerald-600 mt-1">✅ Green indicates previously seen in prior sessions.</p>
+              <p className="text-xs text-emerald-600 mt-1">
+                ✅ Green indicates previously seen in prior sessions.
+              </p>
             )}
           </div>
           {PREPOPULATED_CONDITIONS.map(({ category, conditions }) => (
             <div key={category}>
-              <h4 className="text-sm font-semibold text-slate-600 mb-2">{category}</h4>
+              <h4 className="text-sm font-semibold text-slate-600 mb-2">
+                {category}
+              </h4>
               <div className="flex flex-wrap gap-2">
                 {conditions.map(cond => {
                   const checked = (form.conditionsSeen || []).includes(cond);
@@ -374,7 +439,9 @@ const updateRedFlagBenchmark = (
                         onChange={() => toggleCondition(cond)}
                         className="w-3.5 h-3.5 accent-indigo-600"
                       />
-                      {prev && !checked && <span className="text-emerald-500">✓</span>}
+                      {prev && !checked && (
+                        <span className="text-emerald-500">✓</span>
+                      )}
                       {cond}
                     </label>
                   );
@@ -382,9 +449,12 @@ const updateRedFlagBenchmark = (
               </div>
             </div>
           ))}
+
           {/* Custom conditions */}
           <div>
-            <h4 className="text-sm font-semibold text-slate-600 mb-2">Custom Conditions</h4>
+            <h4 className="text-sm font-semibold text-slate-600 mb-2">
+              Custom Conditions
+            </h4>
             <div className="flex gap-2 mb-2">
               <input
                 type="text"
@@ -405,9 +475,18 @@ const updateRedFlagBenchmark = (
             {(form.customConditions || []).length > 0 && (
               <div className="flex flex-wrap gap-2">
                 {(form.customConditions || []).map(cond => (
-                  <span key={cond} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-purple-100 border border-purple-300 text-purple-800 text-sm">
+                  <span
+                    key={cond}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-purple-100 border border-purple-300 text-purple-800 text-sm"
+                  >
                     {cond}
-                    <button type="button" onClick={() => removeCustomCondition(cond)} className="text-purple-500 hover:text-purple-700 font-bold">×</button>
+                    <button
+                      type="button"
+                      onClick={() => removeCustomCondition(cond)}
+                      className="text-purple-500 hover:text-purple-700 font-bold"
+                    >
+                      ×
+                    </button>
                   </span>
                 ))}
               </div>
@@ -421,16 +500,23 @@ const updateRedFlagBenchmark = (
         <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-5">
           <div>
             <h3 className="font-bold text-slate-800 text-lg">📚 Teaching Topics</h3>
-            <p className="text-sm text-slate-400 mt-1">Select or add topics taught during this session, organized by body system.</p>
+            <p className="text-sm text-slate-400 mt-1">
+              Select or add topics taught during this session, organized by body system.
+            </p>
           </div>
           {TEACHING_TOPIC_CATEGORIES.map(({ category, topics }) => {
             const selectedTopics = getTopicsForCategory(category);
             return (
-              <div key={category} className="border border-slate-100 rounded-xl p-4">
+              <div
+                key={category}
+                className="border border-slate-100 rounded-xl p-4"
+              >
                 <h4 className="text-sm font-semibold text-slate-700 mb-3">
                   {category}
                   {selectedTopics.length > 0 && (
-                    <span className="ml-2 text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full">{selectedTopics.length} selected</span>
+                    <span className="ml-2 text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full">
+                      {selectedTopics.length} selected
+                    </span>
                   )}
                 </h4>
                 <div className="flex flex-wrap gap-2 mb-2">
@@ -460,7 +546,12 @@ const updateRedFlagBenchmark = (
                   <input
                     type="text"
                     value={customTopicInputs[category] || ''}
-                    onChange={e => setCustomTopicInputs(prev => ({ ...prev, [category]: e.target.value }))}
+                    onChange={e =>
+                      setCustomTopicInputs(prev => ({
+                        ...prev,
+                        [category]: e.target.value,
+                      }))
+                    }
                     onKeyDown={e => e.key === 'Enter' && addCustomTopic(category)}
                     placeholder="Add custom topic..."
                     className="flex-1 px-3 py-1.5 rounded-lg border border-slate-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none text-xs"
@@ -483,34 +574,60 @@ const updateRedFlagBenchmark = (
       {step === 3 && (
         <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
           <div>
-            <h3 className="font-bold text-slate-800 text-lg">🎯 Clinical Objectives (EPAs)</h3>
+            <h3 className="font-bold text-slate-800 text-lg">
+              🎯 Clinical Objectives (EPAs)
+            </h3>
             <p className="text-sm text-slate-400 mt-1">
               Check which expectations the student demonstrated during this session.
-              Showing <span className={`font-semibold ${PHASE_CONFIG[effectivePhase].color}`}>{PHASE_CONFIG[effectivePhase].label}</span> expectations.
+              Showing{' '}
+              <span
+                className={`font-semibold ${PHASE_CONFIG[effectivePhase].color}`}
+              >
+                {PHASE_CONFIG[effectivePhase].label}
+              </span>{' '}
+              expectations.
             </p>
             {previousObjectives.size > 0 && (
-              <p className="text-xs text-emerald-600 mt-1">✅ Green border indicates expectations achieved in prior sessions.</p>
+              <p className="text-xs text-emerald-600 mt-1">
+                ✅ Green border indicates expectations achieved in prior sessions.
+              </p>
             )}
           </div>
 
           {effectivePhase === 'early' ? (
             <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-700">
-              Phase-specific expectations begin at the Middle Phase. Continue building foundational skills during Early Phase.
+              Phase-specific expectations begin at the Middle Phase. Continue
+              building foundational skills during Early Phase.
             </div>
           ) : (
             <div className="space-y-5">
-              {CLINICAL_OBJECTIVES_V2.map((obj) => {
-                const phaseExpectations = effectivePhase === 'middle' ? obj.expectations.middle : obj.expectations.final;
+              {CLINICAL_OBJECTIVES_V2.map(obj => {
+                const phaseExpectations =
+                  effectivePhase === 'middle'
+                    ? obj.expectations.middle
+                    : obj.expectations.final;
                 return (
-                  <div key={obj.id} className="border border-slate-200 rounded-xl overflow-hidden">
+                  <div
+                    key={obj.id}
+                    className="border border-slate-200 rounded-xl overflow-hidden"
+                  >
                     <div className="px-4 py-3 bg-slate-50 border-b border-slate-200">
-                      <span className="text-xs font-bold text-indigo-600 mr-2">Outcome {obj.id}</span>
-                      <span className="text-sm font-semibold text-slate-800">{obj.outcome}</span>
+                      <span className="text-xs font-bold text-indigo-600 mr-2">
+                        Outcome {obj.id}
+                      </span>
+                      <span className="text-sm font-semibold text-slate-800">
+                        {obj.outcome}
+                      </span>
                     </div>
                     <div className="p-3 space-y-2">
                       {phaseExpectations.map((exp, ei) => {
-                        const id = expectationId(obj.id, effectivePhase === 'middle' ? 'middle' : 'final', ei);
-                        const checked = (form.objectivesAchieved || []).includes(id);
+                        const id = expectationId(
+                          obj.id,
+                          effectivePhase === 'middle' ? 'middle' : 'final',
+                          ei,
+                        );
+                        const checked =
+                          (form.objectivesAchieved || []).includes(id);
                         const prev = previousObjectives.has(id);
                         return (
                           <label
@@ -530,13 +647,33 @@ const updateRedFlagBenchmark = (
                               className="mt-0.5 w-4 h-4 accent-indigo-600 flex-shrink-0"
                             />
                             <div className="flex-1 min-w-0">
-                              <span className={`text-xs font-bold mr-1 ${checked ? 'text-indigo-600' : prev ? 'text-emerald-600' : 'text-slate-400'}`}>
+                              <span
+                                className={`text-xs font-bold mr-1 ${
+                                  checked
+                                    ? 'text-indigo-600'
+                                    : prev
+                                    ? 'text-emerald-600'
+                                    : 'text-slate-400'
+                                }`}
+                              >
                                 {String.fromCharCode(97 + ei)}.
                               </span>
-                              <span className={`text-sm ${checked ? 'text-indigo-800 font-medium' : prev ? 'text-emerald-700' : 'text-slate-600'}`}>
+                              <span
+                                className={`text-sm ${
+                                  checked
+                                    ? 'text-indigo-800 font-medium'
+                                    : prev
+                                    ? 'text-emerald-700'
+                                    : 'text-slate-600'
+                                }`}
+                              >
                                 {exp}
                               </span>
-                              {prev && !checked && <span className="ml-2 text-xs text-emerald-500">✓ Previously achieved</span>}
+                              {prev && !checked && (
+                                <span className="ml-2 text-xs text-emerald-500">
+                                  ✓ Previously achieved
+                                </span>
+                              )}
                             </div>
                           </label>
                         );
@@ -549,7 +686,9 @@ const updateRedFlagBenchmark = (
           )}
 
           <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-3 text-sm text-indigo-700">
-            {(form.objectivesAchieved || []).length} expectation{(form.objectivesAchieved || []).length !== 1 ? 's' : ''} marked for this session
+            {(form.objectivesAchieved || []).length} expectation
+            {(form.objectivesAchieved || []).length !== 1 ? 's' : ''} marked for
+            this session
           </div>
         </div>
       )}
@@ -569,7 +708,9 @@ const updateRedFlagBenchmark = (
                 label={cat.label}
                 description={cat.description}
                 value={form.scores[cat.key as keyof typeof form.scores]}
-                onChange={v => updateScore(cat.key as keyof typeof form.scores, v)}
+                onChange={v =>
+                  updateScore(cat.key as keyof typeof form.scores, v)
+                }
                 rubrics={cat.rubrics}
               />
             ))}
@@ -581,87 +722,13 @@ const updateRedFlagBenchmark = (
         </div>
       )}
 
-      {/* Step 5: Feedback */}
-      // somewhere in the Feedback & Notes step JSX:
-// somewhere in the Feedback & Notes step JSX:
-const isMidOrFinal = form.phase === 'middle' || form.phase === 'final';
-
-{isMidOrFinal && (
-  <div className="mt-6 bg-rose-50 border border-rose-200 rounded-2xl p-4 space-y-4">
-    <div className="flex items-start justify-between gap-3">
-      <div>
-        <h3 className="font-bold text-rose-800 text-sm">
-          Internal Medicine Benchmarks – Red Flags (Mid-Year / End-of-Rotation)
-        </h3>
-        <p className="text-xs text-rose-700 mt-1">
-          For each competency, indicate whether you have concerns based on the
-          Internal Medicine benchmark table. Use this section to guide mid-year
-          and end-of-rotation reviews.
-        </p>
-      </div>
-    </div>
-
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-      {RED_FLAG_COMPETENCIES.map(comp => {
-        const value = form.redFlagBenchmarks?.[comp.key] || { status: 'none', plan: '' };
-
-        return (
-          <div key={comp.key} className="bg-white rounded-xl border border-rose-100 p-3 space-y-2">
-            <p className="text-sm font-semibold text-slate-800">
-              {comp.label}
-            </p>
-
-            {/* Status radio buttons */}
-            <div className="flex flex-wrap gap-2 text-xs">
-              {[
-                { id: 'none', label: 'No Concerns' },
-                { id: 'redFlag', label: 'Red Flags Observed' },
-                { id: 'unsure', label: 'Unsure' },
-              ].map(opt => (
-                <button
-                  key={opt.id}
-                  type="button"
-                  onClick={() =>
-                    updateRedFlagBenchmark(comp.key, { status: opt.id as RedFlagStatus })
-                  }
-                  className={`px-2.5 py-1 rounded-full border text-xs font-medium transition ${
-                    value.status === opt.id
-                      ? 'bg-rose-600 text-white border-rose-600'
-                      : 'bg-white text-slate-600 border-slate-200 hover:border-rose-300'
-                  }`}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-
-            {/* Plan textarea, shown for redFlag or unsure */}
-            {(value.status === 'redFlag' || value.status === 'unsure') && (
-              <div className="space-y-1">
-                <label className="text-[11px] font-medium text-slate-600">
-                  Planned follow-up / actions
-                  <span className="text-slate-400 font-normal"> (optional)</span>
-                </label>
-                <textarea
-                  className="w-full text-xs rounded-lg border border-slate-200 px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-rose-400/60 focus:border-rose-400 resize-vertical min-h-[60px]"
-                  placeholder="E.g., schedule meeting with student, discuss with LIC director, increase observation, etc."
-                  value={value.plan}
-                  onChange={e =>
-                    updateRedFlagBenchmark(comp.key, { plan: e.target.value })
-                  }
-                />
-              </div>
-            )}
-          </div>
-        );
-      })}
-    </div>
-  </div>
-)}
+      {/* Step 5: Feedback & Internal Medicine Benchmarks */}
       {step === 5 && (
         <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-5">
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">💪 Strengths</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">
+              💪 Strengths
+            </label>
             <textarea
               value={form.strengths}
               onChange={e => updateForm('strengths', e.target.value)}
@@ -671,7 +738,9 @@ const isMidOrFinal = form.phase === 'middle' || form.phase === 'final';
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">🎯 Areas for Improvement</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">
+              🎯 Areas for Improvement
+            </label>
             <textarea
               value={form.areasForImprovement}
               onChange={e => updateForm('areasForImprovement', e.target.value)}
@@ -681,7 +750,9 @@ const isMidOrFinal = form.phase === 'middle' || form.phase === 'final';
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">📋 Action Plan / Goals</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">
+              📋 Action Plan / Goals
+            </label>
             <textarea
               value={form.actionPlan}
               onChange={e => updateForm('actionPlan', e.target.value)}
@@ -691,7 +762,9 @@ const isMidOrFinal = form.phase === 'middle' || form.phase === 'final';
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">📝 Preceptor Notes (private)</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">
+              📝 Preceptor Notes (private)
+            </label>
             <textarea
               value={form.preceptorNotes}
               onChange={e => updateForm('preceptorNotes', e.target.value)}
@@ -701,7 +774,9 @@ const isMidOrFinal = form.phase === 'middle' || form.phase === 'final';
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">⭐ Overall Session Rating</label>
+            <label className="block text-sm font-medium text-slate-700 mb-2">
+              ⭐ Overall Session Rating
+            </label>
             <div className="flex items-center gap-3">
               {[1, 2, 3, 4, 5].map(r => (
                 <button
@@ -719,6 +794,95 @@ const isMidOrFinal = form.phase === 'middle' || form.phase === 'final';
               ))}
             </div>
           </div>
+
+          {/* Internal Medicine Red-Flag Benchmarks (mid/final only) */}
+          {isMidOrFinal && (
+            <div className="mt-6 bg-rose-50 border border-rose-200 rounded-2xl p-4 space-y-4">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h3 className="font-bold text-rose-800 text-sm">
+                    Internal Medicine Benchmarks – Red Flags (Mid-Year / End-of-Rotation)
+                  </h3>
+                  <p className="text-xs text-rose-700 mt-1">
+                    For each competency, indicate whether you have concerns based on the
+                    Internal Medicine benchmark table. Use this section to guide mid-year
+                    and end-of-rotation reviews.
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {RED_FLAG_COMPETENCIES.map(comp => {
+                  const value =
+                    form.redFlagBenchmarks?.[comp.key] || ({
+                      status: 'none',
+                      plan: '',
+                    } as RedFlagPlan);
+
+                  return (
+                    <div
+                      key={comp.key}
+                      className="bg-white rounded-xl border border-rose-100 p-3 space-y-2"
+                    >
+                      <p className="text-sm font-semibold text-slate-800">
+                        {comp.label}
+                      </p>
+
+                      {/* Status buttons */}
+                      <div className="flex flex-wrap gap-2 text-xs">
+                        {[
+                          { id: 'none', label: 'No Concerns' },
+                          { id: 'redFlag', label: 'Red Flags Observed' },
+                          { id: 'unsure', label: 'Unsure' },
+                        ].map(opt => (
+                          <button
+                            key={opt.id}
+                            type="button"
+                            onClick={() =>
+                              updateRedFlagBenchmark(comp.key, {
+                                status: opt.id as RedFlagStatus,
+                              })
+                            }
+                            className={`px-2.5 py-1 rounded-full border text-xs font-medium transition ${
+                              value.status === opt.id
+                                ? 'bg-rose-600 text-white border-rose-600'
+                                : 'bg-white text-slate-600 border-slate-200 hover:border-rose-300'
+                            }`}
+                          >
+                            {opt.label}
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* Plan textarea for redFlag / unsure */}
+                      {(value.status === 'redFlag' ||
+                        value.status === 'unsure') && (
+                        <div className="space-y-1">
+                          <label className="text-[11px] font-medium text-slate-600">
+                            Planned follow-up / actions
+                            <span className="text-slate-400 font-normal">
+                              {' '}
+                              (optional)
+                            </span>
+                          </label>
+                          <textarea
+                            className="w-full text-xs rounded-lg border border-slate-200 px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-rose-400/60 focus:border-rose-400 resize-vertical min-h-[60px]"
+                            placeholder="E.g., schedule meeting with student, discuss with LIC director, increase observation, etc."
+                            value={value.plan}
+                            onChange={e =>
+                              updateRedFlagBenchmark(comp.key, {
+                                plan: e.target.value,
+                              })
+                            }
+                          />
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -726,11 +890,15 @@ const isMidOrFinal = form.phase === 'middle' || form.phase === 'final';
       {step === 6 && (
         <div className="space-y-4">
           <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
-            <h3 className="font-bold text-slate-800 text-lg mb-4">📋 Evaluation Summary</h3>
+            <h3 className="font-bold text-slate-800 text-lg mb-4">
+              📋 Evaluation Summary
+            </h3>
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
                 <p className="text-slate-400">Student</p>
-                <p className="font-semibold text-slate-800">{data.students.find(s => s.id === form.studentId)?.name || '-'}</p>
+                <p className="font-semibold text-slate-800">
+                  {data.students.find(s => s.id === form.studentId)?.name || '-'}
+                </p>
               </div>
               <div>
                 <p className="text-slate-400">Date</p>
@@ -740,7 +908,9 @@ const isMidOrFinal = form.phase === 'middle' || form.phase === 'final';
                 <p className="text-slate-400">Week / Phase</p>
                 <p className="font-semibold text-slate-800">
                   Week {form.weekNumber} •{' '}
-                  <span className={PHASE_CONFIG[effectivePhase].color}>{PHASE_CONFIG[effectivePhase].label}</span>
+                  <span className={PHASE_CONFIG[effectivePhase].color}>
+                    {PHASE_CONFIG[effectivePhase].label}
+                  </span>
                   {form.phaseOverride && (
                     <span className="ml-1 text-xs text-amber-600">(manual)</span>
                   )}
@@ -748,27 +918,41 @@ const isMidOrFinal = form.phase === 'middle' || form.phase === 'final';
               </div>
               <div>
                 <p className="text-slate-400">Session Type</p>
-                <p className="font-semibold text-slate-800">{form.sessionType}</p>
+                <p className="font-semibold text-slate-800">
+                  {form.sessionType}
+                </p>
               </div>
               <div>
                 <p className="text-slate-400">Patient Encounters</p>
-                <p className="font-semibold text-slate-800">{form.patientEncounters}</p>
+                <p className="font-semibold text-slate-800">
+                  {form.patientEncounters}
+                </p>
               </div>
               <div>
                 <p className="text-slate-400">Overall Rating</p>
-                <p className="font-semibold text-indigo-600 text-lg">{form.overallRating}/5 ⭐</p>
+                <p className="font-semibold text-indigo-600 text-lg">
+                  {form.overallRating}/5 ⭐
+                </p>
               </div>
             </div>
           </div>
 
           {/* Conditions summary */}
-          {((form.conditionsSeen || []).length > 0 || (form.customConditions || []).length > 0) && (
+          {((form.conditionsSeen || []).length > 0 ||
+            (form.customConditions || []).length > 0) && (
             <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
               <h4 className="font-bold text-slate-800 mb-3">🩺 Conditions Seen</h4>
               <div className="flex flex-wrap gap-2">
-                {[...(form.conditionsSeen || []), ...(form.customConditions || [])].map(c => (
-                  <span key={c} className="px-2.5 py-1 bg-blue-50 border border-blue-200 text-blue-700 rounded-lg text-xs">{c}</span>
-                ))}
+                {[...(form.conditionsSeen || []), ...(form.customConditions || [])].map(
+                  c => (
+                    <span
+                      key={c}
+                      className="px-2.5 py-1 bg-blue-50 border border-blue-200 text-blue-700 rounded-lg text-xs"
+                    >
+                      {c}
+                    </span>
+                  ),
+                )}
               </div>
             </div>
           )}
@@ -780,8 +964,12 @@ const isMidOrFinal = form.phase === 'middle' || form.phase === 'final';
               <div className="space-y-2">
                 {(form.teachingTopics || []).map(({ category, topics }) => (
                   <div key={category}>
-                    <span className="text-xs font-semibold text-slate-500">{category}: </span>
-                    <span className="text-xs text-slate-700">{topics.join(', ')}</span>
+                    <span className="text-xs font-semibold text-slate-500">
+                      {category}:{' '}
+                    </span>
+                    <span className="text-xs text-slate-700">
+                      {topics.join(', ')}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -791,29 +979,50 @@ const isMidOrFinal = form.phase === 'middle' || form.phase === 'final';
           {/* Objectives summary */}
           {(form.objectivesAchieved || []).length > 0 && (
             <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
-              <h4 className="font-bold text-slate-800 mb-3">🎯 Clinical Objectives Achieved</h4>
+              <h4 className="font-bold text-slate-800 mb-3">
+                🎯 Clinical Objectives Achieved
+              </h4>
               <div className="space-y-2">
                 {CLINICAL_OBJECTIVES_V2.map(obj => {
                   const achieved = (form.objectivesAchieved || []).filter(id =>
-                    typeof id === 'string' && (id.startsWith(`${obj.id}-middle-`) || id.startsWith(`${obj.id}-final-`))
+                    typeof id === 'string' &&
+                    (id.startsWith(`${obj.id}-middle-`) ||
+                      id.startsWith(`${obj.id}-final-`)),
                   );
                   if (achieved.length === 0) return null;
                   return (
                     <div key={obj.id}>
-                      <p className="text-xs font-bold text-indigo-600 mb-1">Outcome {obj.id}: {obj.outcome}</p>
+                      <p className="text-xs font-bold text-indigo-600 mb-1">
+                        Outcome {obj.id}: {obj.outcome}
+                      </p>
                       {achieved.map(id => {
-                        const parts = typeof id === 'string' ? id.split('-') : [];
+                        const parts =
+                          typeof id === 'string' ? id.split('-') : [];
                         const phase = parts[1] as 'middle' | 'final' | undefined;
                         const letter = parts[2];
-                        const idx = letter ? letter.charCodeAt(0) - 97 : -1;
-                        const text = phase && idx >= 0
-                          ? (obj.expectations[phase]?.[idx] || id)
-                          : String(id);
+                        const idx = letter
+                          ? letter.charCodeAt(0) - 97
+                          : -1;
+                        const text =
+                          phase && idx >= 0
+                            ? obj.expectations[phase]?.[idx] || id
+                            : String(id);
                         return (
-                          <div key={String(id)} className="flex items-start gap-2 text-sm ml-3">
-                            <span className="text-emerald-500 font-bold flex-shrink-0">✓</span>
+                          <div
+                            key={String(id)}
+                            className="flex items-start gap-2 text-sm ml-3"
+                          >
+                            <span className="text-emerald-500 font-bold flex-shrink-0">
+                              ✓
+                            </span>
                             <span className="text-slate-600">
-                              <span className={`text-xs font-medium mr-1 ${phase === 'middle' ? 'text-amber-600' : 'text-emerald-600'}`}>
+                              <span
+                                className={`text-xs font-medium mr-1 ${
+                                  phase === 'middle'
+                                    ? 'text-amber-600'
+                                    : 'text-emerald-600'
+                                }`}
+                              >
                                 [{phase}]
                               </span>
                               {letter}. {text}
@@ -825,12 +1034,24 @@ const isMidOrFinal = form.phase === 'middle' || form.phase === 'final';
                   );
                 })}
                 {/* Backward compat: show legacy numeric objectives */}
-                {(form.objectivesAchieved || []).filter(id => typeof id === 'number').map(i => (
-                  <div key={String(i)} className="flex items-start gap-2 text-sm">
-                    <span className="text-emerald-500 font-bold flex-shrink-0">✓</span>
-                    <span className="text-slate-600"><span className="font-medium text-slate-700">EPA {Number(i) + 1}:</span> {CLINICAL_OBJECTIVES[Number(i)]}</span>
-                  </div>
-                ))}
+                {(form.objectivesAchieved || [])
+                  .filter(id => typeof id === 'number')
+                  .map(i => (
+                    <div
+                      key={String(i)}
+                      className="flex items-start gap-2 text-sm"
+                    >
+                      <span className="text-emerald-500 font-bold flex-shrink-0">
+                        ✓
+                      </span>
+                      <span className="text-slate-600">
+                        <span className="font-medium text-slate-700">
+                          EPA {Number(i) + 1}:
+                        </span>{' '}
+                        {CLINICAL_OBJECTIVES[Number(i)]}
+                      </span>
+                    </div>
+                  ))}
               </div>
             </div>
           )}
@@ -839,11 +1060,20 @@ const isMidOrFinal = form.phase === 'middle' || form.phase === 'final';
             <h4 className="font-bold text-slate-800 mb-3">Competency Scores</h4>
             <div className="grid grid-cols-2 gap-3">
               {SCORE_CATEGORIES.map(cat => (
-                <div key={cat.key} className="flex justify-between items-center text-sm">
+                <div
+                  key={cat.key}
+                  className="flex justify-between items-center text-sm"
+                >
                   <span className="text-slate-600">{cat.label}</span>
-                  <span className={`font-bold ${
-                    form.scores[cat.key] >= 4 ? 'text-emerald-600' : form.scores[cat.key] >= 3 ? 'text-yellow-600' : 'text-red-600'
-                  }`}>
+                  <span
+                    className={`font-bold ${
+                      form.scores[cat.key] >= 4
+                        ? 'text-emerald-600'
+                        : form.scores[cat.key] >= 3
+                        ? 'text-yellow-600'
+                        : 'text-red-600'
+                    }`}
+                  >
                     {form.scores[cat.key]}/5
                   </span>
                 </div>
@@ -851,34 +1081,55 @@ const isMidOrFinal = form.phase === 'middle' || form.phase === 'final';
             </div>
             <div className="mt-3 pt-3 border-t border-slate-100 flex justify-between items-center">
               <span className="font-medium text-slate-700">Average</span>
-              <span className="text-xl font-bold text-indigo-600">{avgScore}/5</span>
+              <span className="text-xl font-bold text-indigo-600">
+                {avgScore}/5
+              </span>
             </div>
           </div>
 
-          {(form.strengths || form.areasForImprovement || form.actionPlan || form.preceptorNotes) && (
+          {(form.strengths ||
+            form.areasForImprovement ||
+            form.actionPlan ||
+            form.preceptorNotes) && (
             <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
               {form.strengths && (
                 <div>
-                  <h4 className="font-semibold text-emerald-700 text-sm">💪 Strengths</h4>
-                  <p className="text-sm text-slate-600 mt-1 whitespace-pre-wrap">{form.strengths}</p>
+                  <h4 className="font-semibold text-emerald-700 text-sm">
+                    💪 Strengths
+                  </h4>
+                  <p className="text-sm text-slate-600 mt-1 whitespace-pre-wrap">
+                    {form.strengths}
+                  </p>
                 </div>
               )}
               {form.areasForImprovement && (
                 <div>
-                  <h4 className="font-semibold text-amber-700 text-sm">🎯 Areas for Improvement</h4>
-                  <p className="text-sm text-slate-600 mt-1 whitespace-pre-wrap">{form.areasForImprovement}</p>
+                  <h4 className="font-semibold text-amber-700 text-sm">
+                    🎯 Areas for Improvement
+                  </h4>
+                  <p className="text-sm text-slate-600 mt-1 whitespace-pre-wrap">
+                    {form.areasForImprovement}
+                  </p>
                 </div>
               )}
               {form.actionPlan && (
                 <div>
-                  <h4 className="font-semibold text-blue-700 text-sm">📋 Action Plan</h4>
-                  <p className="text-sm text-slate-600 mt-1 whitespace-pre-wrap">{form.actionPlan}</p>
+                  <h4 className="font-semibold text-blue-700 text-sm">
+                    📋 Action Plan
+                  </h4>
+                  <p className="text-sm text-slate-600 mt-1 whitespace-pre-wrap">
+                    {form.actionPlan}
+                  </p>
                 </div>
               )}
               {form.preceptorNotes && (
                 <div>
-                  <h4 className="font-semibold text-slate-700 text-sm">📝 Preceptor Notes</h4>
-                  <p className="text-sm text-slate-600 mt-1 whitespace-pre-wrap">{form.preceptorNotes}</p>
+                  <h4 className="font-semibold text-slate-700 text-sm">
+                    📝 Preceptor Notes
+                  </h4>
+                  <p className="text-sm text-slate-600 mt-1 whitespace-pre-wrap">
+                    {form.preceptorNotes}
+                  </p>
                 </div>
               )}
             </div>
