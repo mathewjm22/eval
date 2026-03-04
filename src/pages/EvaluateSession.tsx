@@ -583,6 +583,7 @@ const updateRedFlagBenchmark = (
 
       {/* Step 5: Feedback */}
       // somewhere in the Feedback & Notes step JSX:
+// somewhere in the Feedback & Notes step JSX:
 const isMidOrFinal = form.phase === 'middle' || form.phase === 'final';
 
 {isMidOrFinal && (
