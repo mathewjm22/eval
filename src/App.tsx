@@ -26,7 +26,7 @@ export function App() {
               <Route path="/" element={<Dashboard />} />
               <Route path="/students" element={<Students />} />
               <Route path="/evaluate" element={<EvaluateSession />} />
-              <Route path="/evaluations" element={<EvaluationsList />} />
+              <Route path="/evaluate" element={<EvaluateSession />} />
               <Route path="/evaluations/:id" element={<EvaluateSession />} />
               <Route path="/progress" element={<ProgressView />} />
               <Route path="/calendar" element={<EvaluationCalendar />} /> {/* NEW */}
