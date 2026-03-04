@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useAppData } from '../context';
+import { useTheme } from '../theme';
 import { PHASE_CONFIG, Phase, SCORE_CATEGORIES, SCORE_LABELS, PREPOPULATED_CONDITIONS, TEACHING_TOPIC_CATEGORIES, CLINICAL_OBJECTIVES, CLINICAL_OBJECTIVES_V2, expectationId, TOTAL_OBJECTIVE_EXPECTATIONS, CLINICAL_SKILLS, ClinicalSkillRating } from '../types';
 // Import Recharts components
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
@@ -7,6 +8,8 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 export function ProgressView() {
   const { data, updateStudent } = useAppData();
   const [selectedStudent, setSelectedStudent] = useState<string>(data.students[0]?.id || '');
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
 
   const studentEvals = useMemo(() => {
     return [...data.evaluations]
@@ -156,60 +159,136 @@ export function ProgressView() {
 
       {/* Student Summary Card */}
       {student && (
-        <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl p-6 text-white shadow-xl">
+        <div
+          className="rounded-2xl p-6 text-white shadow-xl relative overflow-hidden"
+          style={isDark ? {
+            background: 'linear-gradient(135deg, rgba(255,45,120,0.25), rgba(124,58,237,0.25))',
+            border: '1px solid rgba(255,45,120,0.25)',
+            boxShadow: '0 8px 32px rgba(255,45,120,0.2)',
+          } : {
+            background: 'linear-gradient(135deg, #4f46e5, #7c3aed)',
+          }}
+        >
+          {isDark && (
+            <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: 'linear-gradient(90deg, #ff2d78, #7c3aed, #00d4ff)' }} />
+          )}
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 bg-white/20 rounded-full flex items-center justify-center text-2xl font-bold">
+            <div
+              className="w-14 h-14 rounded-full flex items-center justify-center text-2xl font-bold"
+              style={{ background: 'rgba(255,255,255,0.15)' }}
+            >
               {student.name.charAt(0)}
             </div>
             <div>
               <h3 className="text-xl font-bold">{student.name}</h3>
-              <p className="text-indigo-200 text-sm">{student.program} • {student.yearLevel} • Started {student.startDate}</p>
+              <p className="text-sm" style={{ color: isDark ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.8)' }}>
+                {student.program} • {student.yearLevel} • Started {student.startDate}
+              </p>
             </div>
           </div>
           <div className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <div className="bg-white/15 backdrop-blur-sm rounded-xl p-3 text-center">
-              <p className="text-2xl font-bold">{studentEvals.length}</p>
-              <p className="text-xs text-indigo-100">Sessions</p>
-            </div>
-            <div className="bg-white/15 backdrop-blur-sm rounded-xl p-3 text-center">
-              <p className="text-2xl font-bold">{phaseEvals('early').length}</p>
-              <p className="text-xs text-indigo-100">Early Phase</p>
-            </div>
-            <div className="bg-white/15 backdrop-blur-sm rounded-xl p-3 text-center">
-              <p className="text-2xl font-bold">{phaseEvals('middle').length}</p>
-              <p className="text-xs text-indigo-100">Middle Phase</p>
-            </div>
-            <div className="bg-white/15 backdrop-blur-sm rounded-xl p-3 text-center">
-              <p className="text-2xl font-bold">{phaseEvals('final').length}</p>
-              <p className="text-xs text-indigo-100">Final Phase</p>
-            </div>
+            {[
+              { value: studentEvals.length, label: 'Sessions', color: isDark ? '#ff2d78' : '#ffffff' },
+              { value: phaseEvals('early').length, label: 'Early Phase', color: isDark ? '#00d4ff' : '#ffffff' },
+              { value: phaseEvals('middle').length, label: 'Middle Phase', color: isDark ? '#ffa502' : '#ffffff' },
+              { value: phaseEvals('final').length, label: 'Final Phase', color: isDark ? '#2ed573' : '#ffffff' },
+            ].map(({ value, label, color }) => (
+              <div
+                key={label}
+                className="rounded-xl p-3 text-center"
+                style={{ background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(8px)' }}
+              >
+                <p className="text-2xl font-bold" style={{ color }}>{value}</p>
+                <p className="text-xs" style={{ color: 'rgba(255,255,255,0.6)' }}>{label}</p>
+              </div>
+            ))}
           </div>
         </div>
       )}
 
       {/* Performance Trend Chart */}
       {studentEvals.length > 0 && (
-        <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
-          <h3 className="font-bold text-slate-800 text-lg mb-4">📊 Performance Trend</h3>
+        <div
+          className="rounded-2xl p-6 relative overflow-hidden"
+          style={isDark ? {
+            background: 'rgba(18,18,31,0.85)',
+            border: '1px solid rgba(255,255,255,0.07)',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+          } : {
+            background: '#ffffff',
+            border: '1px solid #e2e8f0',
+          }}
+        >
+          {isDark && (
+            <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: 'linear-gradient(90deg, #ff2d78, #7c3aed)' }} />
+          )}
+          <h3
+            className="font-bold text-lg mb-4"
+            style={{ color: isDark ? 'rgba(255,255,255,0.9)' : '#0f172a' }}
+          >
+            📊 Performance Trend
+          </h3>
           {chartData.length > 1 ? (
             <div className="h-64 w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={chartData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                  <XAxis dataKey="name" tick={{ fill: '#64748b', fontSize: 12 }} stroke="#cbd5e1" />
-                  <YAxis domain={[1, 5]} tick={{ fill: '#64748b', fontSize: 12 }} stroke="#cbd5e1" />
-                  <Tooltip 
-                    contentStyle={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '0.75rem' }}
-                    itemStyle={{ color: '#334155' }}
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke={isDark ? 'rgba(255,255,255,0.05)' : '#e2e8f0'}
                   />
-                  <Legend />
-                  <Line type="monotone" dataKey="Average Score" stroke="#6366f1" strokeWidth={2.5} dot={{ r: 4 }} activeDot={{ r: 6 }} />
-                  <Line type="monotone" dataKey="Overall Rating" stroke="#10b981" strokeWidth={2.5} dot={{ r: 4 }} activeDot={{ r: 6 }} strokeDasharray="5 5" />
+                  <XAxis
+                    dataKey="name"
+                    tick={{ fill: isDark ? 'rgba(255,255,255,0.5)' : '#64748b', fontSize: 12 }}
+                    stroke={isDark ? 'rgba(255,255,255,0.1)' : '#cbd5e1'}
+                  />
+                  <YAxis
+                    domain={[1, 5]}
+                    tick={{ fill: isDark ? 'rgba(255,255,255,0.5)' : '#64748b', fontSize: 12 }}
+                    stroke={isDark ? 'rgba(255,255,255,0.1)' : '#cbd5e1'}
+                  />
+                  <Tooltip
+                    contentStyle={isDark ? {
+                      background: 'rgba(18,18,31,0.95)',
+                      border: '1px solid rgba(255,45,120,0.3)',
+                      borderRadius: '0.75rem',
+                      color: '#ffffff',
+                    } : {
+                      background: '#fff',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '0.75rem',
+                    }}
+                    itemStyle={{ color: isDark ? '#ffffff' : '#334155' }}
+                  />
+                  <Legend
+                    wrapperStyle={{ color: isDark ? 'rgba(255,255,255,0.6)' : undefined }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="Average Score"
+                    stroke={isDark ? '#ff2d78' : '#6366f1'}
+                    strokeWidth={2.5}
+                    dot={{ r: 4, fill: isDark ? '#ff2d78' : '#6366f1' }}
+                    activeDot={{ r: 6 }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="Overall Rating"
+                    stroke={isDark ? '#00d4ff' : '#10b981'}
+                    strokeWidth={2.5}
+                    dot={{ r: 4, fill: isDark ? '#00d4ff' : '#10b981' }}
+                    activeDot={{ r: 6 }}
+                    strokeDasharray="5 5"
+                  />
                 </LineChart>
               </ResponsiveContainer>
             </div>
           ) : (
-            <p className="text-center text-slate-400 text-sm py-8">Need at least 2 sessions to generate a trend chart.</p>
+            <p
+              className="text-center text-sm py-8"
+              style={{ color: isDark ? 'rgba(255,255,255,0.35)' : '#94a3b8' }}
+            >
+              Need at least 2 sessions to generate a trend chart.
+            </p>
           )}
         </div>
       )}

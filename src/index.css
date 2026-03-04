@@ -3,7 +3,7 @@
 /* -----------------------------
    Theme tokens
    Default: light
-   Dark: gunmetal + lime
+   Dark: neon dashboard
 -------------------------------- */
 
 :root {
@@ -17,24 +17,52 @@
   --muted: rgba(15, 23, 42, 0.60);
 
   /* accent */
-  --accent: #4f46e5; /* indigo-ish for light */
+  --accent: #4f46e5;
   --accent-soft: rgba(79, 70, 229, 0.12);
+
+  /* neon palette (available in light too) */
+  --neon-pink: #ff2d78;
+  --neon-purple: #7c3aed;
+  --neon-orange: #ff6b35;
+  --neon-cyan: #00d4ff;
+  --neon-green: #2ed573;
+  --neon-yellow: #c8ff00;
+  --gradient-primary: linear-gradient(135deg, #ff2d78, #7c3aed);
+  --gradient-warm: linear-gradient(135deg, #ff6b35, #ff9500);
+  --gradient-cool: linear-gradient(135deg, #00d4ff, #7c3aed);
+  --card-glow-pink: 0 8px 32px rgba(255, 45, 120, 0.2);
+  --card-glow-purple: 0 8px 32px rgba(124, 58, 237, 0.2);
+  --card-glow-orange: 0 8px 32px rgba(255, 107, 53, 0.2);
 }
 
 html[data-theme="dark"] {
   color-scheme: dark;
 
-  /* gunmetal */
-  --bg: #0b0f14;
-  --panel: rgba(16, 24, 33, 0.92);
-  --panel-2: rgba(14, 20, 28, 0.78);
-  --border: rgba(148, 163, 184, 0.16);
-  --text: #e5e7eb;
-  --muted: rgba(229, 231, 235, 0.62);
+  /* neon dark */
+  --bg: #0a0a0f;
+  --panel: rgba(18, 18, 31, 0.95);
+  --panel-2: rgba(26, 26, 46, 0.85);
+  --border: rgba(255, 255, 255, 0.08);
+  --text: #ffffff;
+  --muted: rgba(255, 255, 255, 0.55);
 
-  /* lime */
-  --accent: #a3ff12;
-  --accent-soft: rgba(163, 255, 18, 0.12);
+  /* neon accent = hot pink */
+  --accent: #ff2d78;
+  --accent-soft: rgba(255, 45, 120, 0.15);
+
+  /* neon palette */
+  --neon-pink: #ff2d78;
+  --neon-purple: #7c3aed;
+  --neon-orange: #ff6b35;
+  --neon-cyan: #00d4ff;
+  --neon-green: #2ed573;
+  --neon-yellow: #c8ff00;
+  --gradient-primary: linear-gradient(135deg, #ff2d78, #7c3aed);
+  --gradient-warm: linear-gradient(135deg, #ff6b35, #ff9500);
+  --gradient-cool: linear-gradient(135deg, #00d4ff, #7c3aed);
+  --card-glow-pink: 0 8px 32px rgba(255, 45, 120, 0.2);
+  --card-glow-purple: 0 8px 32px rgba(124, 58, 237, 0.2);
+  --card-glow-orange: 0 8px 32px rgba(255, 107, 53, 0.2);
 }
 
 html,
@@ -44,8 +72,9 @@ body {
 
 body {
   background:
-    radial-gradient(1200px 800px at 15% 10%, var(--accent-soft), transparent 55%),
-    radial-gradient(900px 600px at 85% 20%, rgba(0, 0, 0, 0.16), transparent 60%),
+    radial-gradient(ellipse 800px 600px at 10% 5%, rgba(255, 45, 120, 0.06), transparent 60%),
+    radial-gradient(ellipse 600px 500px at 90% 15%, rgba(124, 58, 237, 0.05), transparent 55%),
+    radial-gradient(ellipse 700px 400px at 50% 90%, rgba(0, 212, 255, 0.04), transparent 60%),
     var(--bg);
   color: var(--text);
 }
@@ -58,17 +87,19 @@ a {
   background: var(--accent-soft);
 }
 
-/* Simple reusable "components" */
+/* -----------------------------------------------
+   Core panel components
+----------------------------------------------- */
 .theme-panel {
   background: var(--panel);
   border: 1px solid var(--border);
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(12px);
 }
 
 .theme-panel-2 {
   background: var(--panel-2);
   border: 1px solid var(--border);
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(12px);
 }
 
 .theme-muted {
@@ -84,19 +115,135 @@ a {
   outline-offset: 2px;
 }
 
-/* Improve native select dropdown readability in dark mode */
-select {
-  color: #0f172a;            /* slate-900 text inside the closed control */
-  background-color: #ffffff; /* white control background */
+/* -----------------------------------------------
+   Neon utility classes
+----------------------------------------------- */
+
+/* Dark glassy card with neon top border gradient */
+.neon-card {
+  background: rgba(18, 18, 31, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  position: relative;
+  overflow: hidden;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
 }
 
-/* On dark theme, force dropdown list text to stay dark on light background */
+.neon-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #ff2d78, #7c3aed);
+  opacity: 0.8;
+}
+
+.neon-card:hover {
+  box-shadow: 0 12px 40px rgba(255, 45, 120, 0.15), 0 4px 16px rgba(0, 0, 0, 0.4);
+  transform: translateY(-1px);
+}
+
+/* Neon gradient badge/pill */
+.neon-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  background: linear-gradient(135deg, #ff2d78, #7c3aed);
+  color: #ffffff;
+}
+
+/* Gradient text */
+.neon-text-gradient {
+  background: linear-gradient(135deg, #ff2d78, #7c3aed);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+.neon-text-warm {
+  background: linear-gradient(135deg, #ff6b35, #ff9500);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+.neon-text-cool {
+  background: linear-gradient(135deg, #00d4ff, #7c3aed);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+/* Neon gradient button */
+.neon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 18px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  background: linear-gradient(135deg, #ff2d78, #7c3aed);
+  color: #ffffff;
+  border: none;
+  cursor: pointer;
+  transition: filter 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 4px 16px rgba(255, 45, 120, 0.3);
+}
+
+.neon-btn:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 24px rgba(255, 45, 120, 0.45);
+}
+
+.neon-btn:active {
+  transform: translateY(0);
+}
+
+/* Neon ghost button */
+.neon-btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 18px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(255, 45, 120, 0.4);
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.neon-btn-ghost:hover {
+  background: rgba(255, 45, 120, 0.1);
+  border-color: rgba(255, 45, 120, 0.7);
+}
+
+/* -----------------------------------------------
+   Improve native select dropdown in dark theme
+----------------------------------------------- */
+select {
+  color: #0f172a;
+  background-color: #ffffff;
+}
+
 :root[data-theme='dark'] select {
   color: #0f172a;
-  background-color: #f9fafb; /* slate-50 */
+  background-color: #f9fafb;
 }
 
-/* Optional: ensure the system dropdown list uses dark text on light bg */
 select option {
   color: #0f172a;
   background-color: #ffffff;
@@ -104,87 +251,336 @@ select option {
 
 /* -----------------------------------------
    Dark-mode compatibility layer
-   Fixes existing pages that still use:
-   bg-white / slate text / slate borders, etc.
+   Maps legacy Tailwind classes → neon dark
 ------------------------------------------ */
 html[data-theme="dark"] .bg-white {
-  background-color: rgba(16, 24, 33, 0.92) !important;
+  background-color: rgba(18, 18, 31, 0.95) !important;
 }
 
 html[data-theme="dark"] .bg-slate-50,
 html[data-theme="dark"] .bg-slate-50\/50,
 html[data-theme="dark"] .bg-slate-100 {
-  background-color: rgba(14, 20, 28, 0.78) !important;
+  background-color: rgba(26, 26, 46, 0.85) !important;
+}
+
+html[data-theme="dark"] .bg-slate-800,
+html[data-theme="dark"] .bg-slate-900 {
+  background-color: rgba(18, 18, 31, 0.95) !important;
+}
+
+html[data-theme="dark"] .bg-slate-950 {
+  background-color: rgba(10, 10, 15, 0.98) !important;
 }
 
 html[data-theme="dark"] .border-slate-100,
 html[data-theme="dark"] .border-slate-200,
 html[data-theme="dark"] .border-slate-300 {
-  border-color: rgba(148, 163, 184, 0.16) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+html[data-theme="dark"] .border-slate-700,
+html[data-theme="dark"] .border-slate-800 {
+  border-color: rgba(255, 255, 255, 0.08) !important;
 }
 
 html[data-theme="dark"] .text-slate-900,
 html[data-theme="dark"] .text-slate-800,
 html[data-theme="dark"] .text-slate-700,
 html[data-theme="dark"] .text-slate-600,
-html[data-theme="dark"] .text-slate-500 {
-  color: rgba(229, 231, 235, 0.92) !important;
+html[data-theme="dark"] .text-slate-500,
+html[data-theme="dark"] .text-slate-100 {
+  color: rgba(255, 255, 255, 0.9) !important;
 }
 
 html[data-theme="dark"] .text-slate-400 {
-  color: rgba(229, 231, 235, 0.62) !important;
+  color: rgba(255, 255, 255, 0.5) !important;
 }
 
-/* Links that were indigo in light mode -> lime in dark */
+/* Indigo → neon pink in dark */
 html[data-theme="dark"] .text-indigo-600,
 html[data-theme="dark"] .text-indigo-700,
 html[data-theme="dark"] .text-indigo-500 {
-  color: var(--accent) !important;
+  color: var(--neon-pink) !important;
 }
 
-/* Indigo backgrounds used for badges/buttons -> lime-ish */
 html[data-theme="dark"] .bg-indigo-50,
 html[data-theme="dark"] .bg-indigo-100 {
-  background-color: rgba(163, 255, 18, 0.10) !important;
+  background-color: rgba(255, 45, 120, 0.1) !important;
 }
 
 html[data-theme="dark"] .border-indigo-100,
 html[data-theme="dark"] .border-indigo-200 {
-  border-color: rgba(163, 255, 18, 0.22) !important;
+  border-color: rgba(255, 45, 120, 0.25) !important;
 }
 
-/* Primary button (bg-indigo-600) should become lime with dark text */
+/* Primary button → neon gradient */
 html[data-theme="dark"] .bg-indigo-600 {
-  background-color: var(--accent) !important;
-  color: #0b0f14 !important;
-}
-html[data-theme="dark"] .hover\:bg-indigo-700:hover {
-  background-color: #c7ff55 !important;
-  color: #0b0f14 !important;
+  background: linear-gradient(135deg, #ff2d78, #7c3aed) !important;
+  color: #ffffff !important;
 }
 
-/* -----------------------------------------
-   Quick actions contrast fixes (dark theme)
-   Specifically for Dashboard buttons using:
-   bg-purple-50/border-purple-200/text-purple-700
-   bg-emerald-50/border-emerald-200/text-emerald-700
------------------------------------------- */
+html[data-theme="dark"] .hover\:bg-indigo-700:hover {
+  filter: brightness(1.1) !important;
+  color: #ffffff !important;
+}
+
+html[data-theme="dark"] .shadow-md.shadow-indigo-200 {
+  box-shadow: 0 4px 16px rgba(255, 45, 120, 0.3) !important;
+}
+
+/* Quick action buttons */
 html[data-theme="dark"] .bg-purple-50,
 html[data-theme="dark"] .bg-emerald-50 {
-  background-color: rgba(163, 255, 18, 0.10) !important;
+  background-color: rgba(255, 45, 120, 0.08) !important;
 }
 
 html[data-theme="dark"] .hover\:bg-purple-100:hover,
 html[data-theme="dark"] .hover\:bg-emerald-100:hover {
-  background-color: rgba(163, 255, 18, 0.16) !important;
+  background-color: rgba(255, 45, 120, 0.14) !important;
 }
 
 html[data-theme="dark"] .text-purple-700,
 html[data-theme="dark"] .text-emerald-700 {
-  color: rgba(229, 231, 235, 0.92) !important;
+  color: rgba(255, 255, 255, 0.9) !important;
 }
 
 html[data-theme="dark"] .border-purple-200,
 html[data-theme="dark"] .border-emerald-200 {
-  border-color: rgba(148, 163, 184, 0.22) !important;
+  border-color: rgba(255, 45, 120, 0.25) !important;
+}
+
+/* Lime → neon pink in dark */
+html[data-theme="dark"] .text-lime-300,
+html[data-theme="dark"] .text-lime-400 {
+  color: var(--neon-pink) !important;
+}
+
+html[data-theme="dark"] .hover\:text-lime-200:hover {
+  color: #ff5a95 !important;
+}
+
+html[data-theme="dark"] .bg-lime-400,
+html[data-theme="dark"] .hover\:bg-lime-300:hover {
+  background: linear-gradient(135deg, #ff2d78, #7c3aed) !important;
+  color: #ffffff !important;
+}
+
+html[data-theme="dark"] .bg-lime-500\/20 {
+  background-color: rgba(255, 45, 120, 0.15) !important;
+}
+
+html[data-theme="dark"] .border-lime-500\/60 {
+  border-color: rgba(255, 45, 120, 0.4) !important;
+}
+
+html[data-theme="dark"] .hover\:border-lime-300\/60:hover {
+  border-color: rgba(255, 45, 120, 0.5) !important;
+}
+
+/* Rose → keep as neon red */
+html[data-theme="dark"] .bg-rose-950 {
+  background-color: rgba(255, 71, 87, 0.12) !important;
+}
+
+html[data-theme="dark"] .border-rose-800 {
+  border-color: rgba(255, 71, 87, 0.3) !important;
+}
+
+html[data-theme="dark"] .text-rose-300 {
+  color: #ff4757 !important;
+}
+
+html[data-theme="dark"] .text-rose-200\/80,
+html[data-theme="dark"] .text-rose-100 {
+  color: rgba(255, 71, 87, 0.85) !important;
+}
+
+/* Score color overrides for neon */
+html[data-theme="dark"] .text-emerald-300 {
+  color: #2ed573 !important;
+}
+
+html[data-theme="dark"] .text-amber-300 {
+  color: #ffa502 !important;
+}
+
+html[data-theme="dark"] .text-sky-300 {
+  color: var(--neon-cyan) !important;
+}
+
+html[data-theme="dark"] .text-indigo-200 {
+  color: rgba(255, 255, 255, 0.75) !important;
+}
+
+/* Score text colors */
+html[data-theme="dark"] .text-emerald-600,
+html[data-theme="dark"] .text-emerald-700 {
+  color: #2ed573 !important;
+}
+
+html[data-theme="dark"] .text-yellow-600,
+html[data-theme="dark"] .text-yellow-700 {
+  color: #ffa502 !important;
+}
+
+html[data-theme="dark"] .text-red-600,
+html[data-theme="dark"] .text-red-700,
+html[data-theme="dark"] .text-red-500 {
+  color: #ff4757 !important;
+}
+
+html[data-theme="dark"] .text-violet-700 {
+  color: #9b59b6 !important;
+}
+
+html[data-theme="dark"] .text-sky-700 {
+  color: var(--neon-cyan) !important;
+}
+
+/* Background colors for score indicators */
+html[data-theme="dark"] .bg-emerald-50 {
+  background-color: rgba(46, 213, 115, 0.1) !important;
+}
+
+html[data-theme="dark"] .border-emerald-100,
+html[data-theme="dark"] .border-emerald-200 {
+  border-color: rgba(46, 213, 115, 0.2) !important;
+}
+
+html[data-theme="dark"] .bg-red-50 {
+  background-color: rgba(255, 71, 87, 0.1) !important;
+}
+
+html[data-theme="dark"] .border-red-100,
+html[data-theme="dark"] .border-red-200 {
+  border-color: rgba(255, 71, 87, 0.2) !important;
+}
+
+html[data-theme="dark"] .bg-yellow-50 {
+  background-color: rgba(255, 165, 2, 0.1) !important;
+}
+
+html[data-theme="dark"] .border-yellow-100,
+html[data-theme="dark"] .border-yellow-200 {
+  border-color: rgba(255, 165, 2, 0.2) !important;
+}
+
+/* ProgressView student card gradient */
+html[data-theme="dark"] .bg-gradient-to-r.from-indigo-600.to-purple-600 {
+  background: linear-gradient(135deg, rgba(255,45,120,0.3), rgba(124,58,237,0.3)) !important;
+  border: 1px solid rgba(255,45,120,0.2) !important;
+}
+
+/* Phase card overrides in dark */
+html[data-theme="dark"] .bg-sky-50,
+html[data-theme="dark"] .bg-violet-50,
+html[data-theme="dark"] .bg-amber-50 {
+  background-color: rgba(255,255,255,0.04) !important;
+}
+
+html[data-theme="dark"] .border-sky-200,
+html[data-theme="dark"] .border-violet-200,
+html[data-theme="dark"] .border-amber-200 {
+  border-color: rgba(255,255,255,0.1) !important;
+}
+
+html[data-theme="dark"] .bg-sky-100,
+html[data-theme="dark"] .bg-violet-100,
+html[data-theme="dark"] .bg-amber-100 {
+  background-color: rgba(255,255,255,0.06) !important;
+}
+
+html[data-theme="dark"] .text-sky-600,
+html[data-theme="dark"] .text-sky-800 {
+  color: var(--neon-cyan) !important;
+}
+
+html[data-theme="dark"] .text-violet-600,
+html[data-theme="dark"] .text-violet-800 {
+  color: #9b59b6 !important;
+}
+
+html[data-theme="dark"] .text-amber-600,
+html[data-theme="dark"] .text-amber-800 {
+  color: #ffa502 !important;
+}
+
+/* Students / form inputs in dark */
+html[data-theme="dark"] input[type="text"],
+html[data-theme="dark"] input[type="date"],
+html[data-theme="dark"] input[type="number"],
+html[data-theme="dark"] input[type="email"],
+html[data-theme="dark"] textarea {
+  background-color: rgba(255,255,255,0.05) !important;
+  border-color: rgba(255,255,255,0.1) !important;
+  color: rgba(255,255,255,0.9) !important;
+}
+
+html[data-theme="dark"] input[type="text"]:focus,
+html[data-theme="dark"] input[type="date"]:focus,
+html[data-theme="dark"] input[type="number"]:focus,
+html[data-theme="dark"] input[type="email"]:focus,
+html[data-theme="dark"] textarea:focus {
+  border-color: rgba(255,45,120,0.5) !important;
+  outline: none !important;
+  box-shadow: 0 0 0 2px rgba(255,45,120,0.15) !important;
+}
+
+html[data-theme="dark"] input::placeholder,
+html[data-theme="dark"] textarea::placeholder {
+  color: rgba(255,255,255,0.3) !important;
+}
+
+/* Calendar day hover */
+html[data-theme="dark"] .hover\:bg-indigo-50:hover {
+  background-color: rgba(255,45,120,0.1) !important;
+}
+
+/* Badge/tag colors */
+html[data-theme="dark"] .bg-sky-100.text-sky-700 {
+  background-color: rgba(0, 212, 255, 0.12) !important;
+  color: #00d4ff !important;
+  border-color: rgba(0, 212, 255, 0.2) !important;
+}
+
+html[data-theme="dark"] .bg-violet-100.text-violet-700 {
+  background-color: rgba(124, 58, 237, 0.15) !important;
+  color: #9b59b6 !important;
+  border-color: rgba(124, 58, 237, 0.25) !important;
+}
+
+/* Danger zone in Settings */
+html[data-theme="dark"] .bg-red-50.border-red-200 {
+  background-color: rgba(255, 71, 87, 0.08) !important;
+  border-color: rgba(255, 71, 87, 0.25) !important;
+}
+
+html[data-theme="dark"] .bg-red-600 {
+  background-color: #ff4757 !important;
+}
+
+html[data-theme="dark"] .hover\:bg-red-700:hover {
+  background-color: #ff2d40 !important;
+}
+
+/* Slate-300 text (used for dividers) */
+html[data-theme="dark"] .text-slate-300 {
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+/* Green success badge */
+html[data-theme="dark"] .bg-green-100,
+html[data-theme="dark"] .bg-green-50 {
+  background-color: rgba(46, 213, 115, 0.12) !important;
+}
+
+html[data-theme="dark"] .text-green-700,
+html[data-theme="dark"] .text-green-800,
+html[data-theme="dark"] .text-green-600 {
+  color: #2ed573 !important;
+}
+
+html[data-theme="dark"] .border-green-200,
+html[data-theme="dark"] .border-green-300 {
+  border-color: rgba(46, 213, 115, 0.2) !important;
 }
