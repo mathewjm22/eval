@@ -21,6 +21,24 @@ import {
 } from '../types';
 import { ScoreInput } from '../components/ScoreInput';
 
+// inside EvaluateSession.tsx (top of file)
+import { IM_BENCHMARKS, BenchmarkPhase } from '../imBenchmarks';
+
+// inside the EvaluateSession component, after you have the evaluation date:
+const evalDate = new Date(form.date || new Date());
+const month = evalDate.getMonth(); // 0-based: 0 = Jan
+let benchmarkPhase: BenchmarkPhase | null = null;
+
+if (month === 1) {
+  // February
+  benchmarkPhase = 'midYear';
+} else if (month === 7) {
+  // August
+  benchmarkPhase = 'endOfYear';
+} else {
+  benchmarkPhase = null;
+}
+
 const STEPS = [
   'Session Details',
   'Diagnoses & Conditions',
@@ -960,7 +978,37 @@ export function EvaluateSession() {
               </div>
             </div>
           </div>
-
+{benchmarkPhase && (
+  <div className="mt-6 rounded-2xl bg-slate-900 border border-slate-800 p-4 space-y-3">
+    <div className="flex items-center justify-between gap-2">
+      <h3 className="text-sm font-semibold text-slate-100">
+        Internal Medicine Benchmarks – {benchmarkPhase === 'midYear' ? 'Mid-Year (February)' : 'End-of-Year (August)'}
+      </h3>
+      <span className="text-[11px] text-slate-400">
+        Based on evaluation date ({form.date})
+      </span>
+    </div>
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+      {IM_BENCHMARKS.map((row) => (
+        <div
+          key={row.id}
+          className="bg-slate-950/40 border border-slate-700 rounded-xl p-3 space-y-1.5"
+        >
+          <p className="font-semibold text-slate-100 text-xs">
+            {row.area}
+          </p>
+          <ul className="list-disc list-inside space-y-0.5 text-[11px] text-slate-300">
+            {(benchmarkPhase === 'midYear' ? row.midYear : row.endOfYear).map(
+              (line, i) => (
+                <li key={i}>{line}</li>
+              ),
+            )}
+          </ul>
+        </div>
+      ))}
+    </div>
+  </div>
+)}
           {/* Conditions summary */}
           {((form.conditionsSeen || []).length > 0 ||
             (form.customConditions || []).length > 0) && (
