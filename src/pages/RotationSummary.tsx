@@ -2,19 +2,19 @@ import { useMemo } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useAppData } from '../context';
 import { PHASE_CONFIG, SessionEvaluation } from '../types';
-import { IM_BENCHMARKS } from '../imBenchmarks'; // make sure this file exists
+import { IM_BENCHMARKS } from '../imBenchmarks';
 
 function evalHasRedFlag(ev: SessionEvaluation): boolean {
   const rf = ev.redFlagBenchmarks;
   if (!rf) return false;
-  return Object.values(rf).some((v) => v && v.status === 'redFlag');
+  return Object.values(rf).some(v => v && v.status === 'redFlag');
 }
 
-// Helper: time windows around formal mid-year / final
-function isMidYearWindow(weekNumber: number) {
+// Week-based windows around formal mid-year / final
+function isMidYearWeek(weekNumber: number) {
   return weekNumber >= 13 && weekNumber <= 16;
 }
-function isFinalWindow(weekNumber: number) {
+function isEndOfYearWeek(weekNumber: number) {
   return weekNumber >= 31 && weekNumber <= 34;
 }
 
@@ -23,11 +23,11 @@ export function RotationSummary() {
   const { data } = useAppData();
   const navigate = useNavigate();
 
-  const student = data.students.find((s) => s.id === studentId);
+  const student = data.students.find(s => s.id === studentId);
   const studentEvals = useMemo(
     () =>
       data.evaluations
-        .filter((ev) => ev.studentId === studentId)
+        .filter(ev => ev.studentId === studentId)
         .sort(
           (a, b) =>
             new Date(a.date).getTime() - new Date(b.date).getTime(),
@@ -48,13 +48,13 @@ export function RotationSummary() {
   }, [studentEvals]);
 
   const totalRedFlags = useMemo(
-    () => studentEvals.filter((ev) => evalHasRedFlag(ev)).length,
+    () => studentEvals.filter(ev => evalHasRedFlag(ev)).length,
     [studentEvals],
   );
 
   const ratingTrend = useMemo(
     () =>
-      studentEvals.map((ev) => ({
+      studentEvals.map(ev => ({
         date: ev.date,
         rating: ev.overallRating,
       })),
@@ -142,7 +142,7 @@ export function RotationSummary() {
                     const x = (idx / span) * 100;
                     const normalized =
                       (pt.rating - minRating) / (maxRating - minRating || 1);
-                    const y = 40 - normalized * 30 - 5; // padding
+                    const y = 40 - normalized * 30 - 5;
                     return `${x},${y}`;
                   });
                   const polyline = points.join(' ');
@@ -212,33 +212,29 @@ function BenchmarksDetails({ phaseTitle }: { phaseTitle: string }) {
   if (!isMiddle && !isFinal) return null;
 
   return (
-{/* Under the PhaseSection header */}
-{(title.includes('Middle') || title.includes('Final')) && (
-  <details className="mt-2">
-    <summary className="text-[11px] text-slate-400 cursor-pointer">
-      Show {title.includes('Middle') ? 'Mid-Year' : 'End-of-Year'} expectations
-    </summary>
-    <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
-      {IM_BENCHMARKS.map((row) => (
-        <div
-          key={row.id}
-          className="bg-slate-950/40 border border-slate-700 rounded-xl p-3 space-y-1.5"
-        >
-          <p className="font-semibold text-slate-100 text-xs">
-            {row.area}
-          </p>
-          <ul className="list-disc list-inside space-y-0.5 text-[11px] text-slate-300">
-            {(title.includes('Middle') ? row.midYear : row.endOfYear).map(
-              (line, i) => (
+    <details className="mt-2">
+      <summary className="text-[11px] text-slate-400 cursor-pointer">
+        Show {isMiddle ? 'Mid-Year' : 'End-of-Year'} expectations
+      </summary>
+      <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+        {IM_BENCHMARKS.map(row => (
+          <div
+            key={row.id}
+            className="bg-slate-950/40 border border-slate-700 rounded-xl p-3 space-y-1.5"
+          >
+            <p className="font-semibold text-slate-100 text-xs">
+              {row.area}
+            </p>
+            <ul className="list-disc list-inside space-y-0.5 text-[11px] text-slate-300">
+              {(isMiddle ? row.midYear : row.endOfYear).map((line, i) => (
                 <li key={i}>{line}</li>
-              ),
-            )}
-          </ul>
-        </div>
-      ))}
-    </div>
-  </details>
-)}
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+    </details>
+  );
 }
 
 function PhaseSection({
@@ -251,20 +247,7 @@ function PhaseSection({
   description: string;
   evaluations: SessionEvaluation[];
   navigate: (path: string) => void;
-}
-// inside RotationSummary.tsx, in PhaseSection for middle and final
-
-{title.includes('Middle') && (
-  <p className="mt-1 text-[11px] text-slate-400">
-    Use these evaluations to judge progress toward the <span className="font-semibold">Mid-Year (February)</span> benchmarks.
-  </p>
-)}
-{title.includes('Final') && (
-  <p className="mt-1 text-[11px] text-slate-400">
-    Use these evaluations to judge performance against the <span className="font-semibold">End-of-Year (August)</span> benchmarks.
-  </p>
-)}                     
-                     ) {
+}) {
   if (evaluations.length === 0) {
     return (
       <div className="rounded-2xl bg-slate-900 border border-slate-800 p-4">
@@ -294,13 +277,13 @@ function PhaseSection({
       <BenchmarksDetails phaseTitle={title} />
 
       <div className="space-y-2">
-        {evaluations.map((ev) => {
+        {evaluations.map(ev => {
           const hasRedFlag = evalHasRedFlag(ev);
           const phaseConf = PHASE_CONFIG[ev.phase];
           const midWindow =
-            isMidYearWindow(ev.weekNumber) && ev.phase === 'middle';
+            isMidYearWeek(ev.weekNumber) && ev.phase === 'middle';
           const finalWindow =
-            isFinalWindow(ev.weekNumber) && ev.phase === 'final';
+            isEndOfYearWeek(ev.weekNumber) && ev.phase === 'final';
 
           return (
             <button
