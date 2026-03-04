@@ -2,11 +2,12 @@ import { useMemo } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useAppData } from '../context';
 import { PHASE_CONFIG, SessionEvaluation } from '../types';
+import { IM_BENCHMARKS } from '../imBenchmarks'; // make sure this file exists
 
 function evalHasRedFlag(ev: SessionEvaluation): boolean {
   const rf = ev.redFlagBenchmarks;
   if (!rf) return false;
-  return Object.values(rf).some(v => v && v.status === 'redFlag');
+  return Object.values(rf).some((v) => v && v.status === 'redFlag');
 }
 
 // Helper: time windows around formal mid-year / final
@@ -22,11 +23,11 @@ export function RotationSummary() {
   const { data } = useAppData();
   const navigate = useNavigate();
 
-  const student = data.students.find(s => s.id === studentId);
+  const student = data.students.find((s) => s.id === studentId);
   const studentEvals = useMemo(
     () =>
       data.evaluations
-        .filter(ev => ev.studentId === studentId)
+        .filter((ev) => ev.studentId === studentId)
         .sort(
           (a, b) =>
             new Date(a.date).getTime() - new Date(b.date).getTime(),
@@ -47,13 +48,13 @@ export function RotationSummary() {
   }, [studentEvals]);
 
   const totalRedFlags = useMemo(
-    () => studentEvals.filter(ev => evalHasRedFlag(ev)).length,
+    () => studentEvals.filter((ev) => evalHasRedFlag(ev)).length,
     [studentEvals],
   );
 
   const ratingTrend = useMemo(
     () =>
-      studentEvals.map(ev => ({
+      studentEvals.map((ev) => ({
         date: ev.date,
         rating: ev.overallRating,
       })),
@@ -127,7 +128,7 @@ export function RotationSummary() {
           </div>
         </div>
 
-        {/* Overall rating trend sparkline (full-width card) */}
+        {/* Overall rating trend sparkline */}
         {ratingTrend.length > 1 && (
           <div className="md:col-span-3 rounded-2xl bg-slate-900 border border-slate-800 p-4">
             <p className="text-xs text-slate-400 mb-2">Overall Rating Trend</p>
@@ -204,6 +205,38 @@ export function RotationSummary() {
   );
 }
 
+// Optional shared benchmarks UI
+function BenchmarksDetails({ phaseTitle }: { phaseTitle: string }) {
+  const isMiddle = phaseTitle.includes('Middle');
+  const isFinal = phaseTitle.includes('Final');
+  if (!isMiddle && !isFinal) return null;
+
+  return (
+    <details className="mt-2">
+      <summary className="text-[11px] text-slate-400 cursor-pointer">
+        Show {isMiddle ? 'Mid-Year' : 'End-of-Year'} expectations
+      </summary>
+      <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+        {IM_BENCHMARKS.map((row) => (
+          <div
+            key={row.id}
+            className="bg-slate-950/40 border border-slate-700 rounded-xl p-3 space-y-1.5"
+          >
+            <p className="font-semibold text-slate-100 text-xs">
+              {row.area}
+            </p>
+            <ul className="list-disc list-inside space-y-0.5 text-[11px] text-slate-300">
+              {(isMiddle ? row.midYear : row.endOfYear).map((line, i) => (
+                <li key={i}>{line}</li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+    </details>
+  );
+}
+
 function PhaseSection({
   title,
   description,
@@ -240,11 +273,15 @@ function PhaseSection({
         </div>
       </div>
 
+      {/* Benchmarks toggle for middle / final phases */}
+      <BenchmarksDetails phaseTitle={title} />
+
       <div className="space-y-2">
-        {evaluations.map(ev => {
+        {evaluations.map((ev) => {
           const hasRedFlag = evalHasRedFlag(ev);
           const phaseConf = PHASE_CONFIG[ev.phase];
-          const midWindow = isMidYearWindow(ev.weekNumber) && ev.phase === 'middle';
+          const midWindow =
+            isMidYearWindow(ev.weekNumber) && ev.phase === 'middle';
           const finalWindow =
             isFinalWindow(ev.weekNumber) && ev.phase === 'final';
 
