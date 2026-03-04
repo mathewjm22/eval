@@ -14,8 +14,12 @@ import {
   CLINICAL_OBJECTIVES,
   CLINICAL_OBJECTIVES_V2,
   expectationId,
+  RED_FLAG_COMPETENCIES,   // NEW
+  RedFlagPlan,             // NEW
+  RedFlagStatus,           // NEW
 } from '../types';
 import { ScoreInput } from '../components/ScoreInput';
+
 
 const STEPS = ['Session Details', 'Diagnoses & Conditions', 'Teaching Topics', 'Clinical Objectives', 'Clinical Scores', 'Feedback & Notes', 'Review & Submit'];
 const LAST_STEP = STEPS.length - 1;
@@ -27,31 +31,56 @@ export function EvaluateSession() {
 
   const existingEval = id ? data.evaluations.find(e => e.id === id) : null;
 
-  const [form, setForm] = useState<SessionEvaluation>(() => {
-    if (existingEval) return { ...existingEval, scores: { ...existingEval.scores } };
-    return {
-      id: uuidv4(),
-      studentId: data.students[0]?.id || '',
-      date: new Date().toISOString().split('T')[0],
-      weekNumber: 1,
-      phase: 'early' as Phase,
-      sessionType: SESSION_TYPES[0],
-      patientEncounters: 0,
-      scores: { ...DEFAULT_SCORES },
-      strengths: '',
-      areasForImprovement: '',
-      actionPlan: '',
-      preceptorNotes: '',
-      overallRating: 3,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      conditionsSeen: [],
-      customConditions: [],
-      teachingTopics: [],
-      objectivesAchieved: [],
-    };
-  });
+const [form, setForm] = useState<SessionEvaluation>(() => {
+  if (existingEval) return { ...existingEval, scores: { ...existingEval.scores } };
+  return {
+    id: uuidv4(),
+    studentId: data.students[0]?.id || '',
+    date: new Date().toISOString().split('T')[0],
+    weekNumber: 1,
+    phase: 'early' as Phase,
+    sessionType: SESSION_TYPES[0],
+    patientEncounters: 0,
+    scores: { ...DEFAULT_SCORES },
+    strengths: '',
+    areasForImprovement: '',
+    actionPlan: '',
+    preceptorNotes: '',
+    overallRating: 3,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    conditionsSeen: [],
+    teachingTopics: [],
+    objectivesAchieved: [],
+    // NEW:
+    redFlagBenchmarks: {
+      medicalKnowledge: { status: 'none', plan: '' },
+      clinicalReasoning: { status: 'none', plan: '' },
+      communicationEmotional: { status: 'none', plan: '' },
+      interpersonalCommunication: { status: 'none', plan: '' },
+    },
+  };
+});
 
+  
+  
+const updateRedFlagBenchmark = (
+  key: keyof NonNullable<SessionEvaluation['redFlagBenchmarks']>,
+  patch: Partial<RedFlagPlan>,
+) => {
+  setForm(prev => ({
+    ...prev,
+    redFlagBenchmarks: {
+      ...(prev.redFlagBenchmarks || {}),
+      [key]: {
+        status: 'none',
+        plan: '',
+        ...(prev.redFlagBenchmarks?.[key] || {}),
+        ...patch,
+      },
+    },
+  }));
+};
   const [step, setStep] = useState(0);
   const [saved, setSaved] = useState(false);
   const [customConditionInput, setCustomConditionInput] = useState('');
@@ -553,6 +582,81 @@ export function EvaluateSession() {
       )}
 
       {/* Step 5: Feedback */}
+      // somewhere in the Feedback & Notes step JSX:
+const isMidOrFinal = form.phase === 'middle' || form.phase === 'final';
+
+{isMidOrFinal && (
+  <div className="mt-6 bg-rose-50 border border-rose-200 rounded-2xl p-4 space-y-4">
+    <div className="flex items-start justify-between gap-3">
+      <div>
+        <h3 className="font-bold text-rose-800 text-sm">
+          Internal Medicine Benchmarks – Red Flags (Mid-Year / End-of-Rotation)
+        </h3>
+        <p className="text-xs text-rose-700 mt-1">
+          For each competency, indicate whether you have concerns based on the
+          Internal Medicine benchmark table. Use this section to guide mid-year
+          and end-of-rotation reviews.
+        </p>
+      </div>
+    </div>
+
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {RED_FLAG_COMPETENCIES.map(comp => {
+        const value = form.redFlagBenchmarks?.[comp.key] || { status: 'none', plan: '' };
+
+        return (
+          <div key={comp.key} className="bg-white rounded-xl border border-rose-100 p-3 space-y-2">
+            <p className="text-sm font-semibold text-slate-800">
+              {comp.label}
+            </p>
+
+            {/* Status radio buttons */}
+            <div className="flex flex-wrap gap-2 text-xs">
+              {[
+                { id: 'none', label: 'No Concerns' },
+                { id: 'redFlag', label: 'Red Flags Observed' },
+                { id: 'unsure', label: 'Unsure' },
+              ].map(opt => (
+                <button
+                  key={opt.id}
+                  type="button"
+                  onClick={() =>
+                    updateRedFlagBenchmark(comp.key, { status: opt.id as RedFlagStatus })
+                  }
+                  className={`px-2.5 py-1 rounded-full border text-xs font-medium transition ${
+                    value.status === opt.id
+                      ? 'bg-rose-600 text-white border-rose-600'
+                      : 'bg-white text-slate-600 border-slate-200 hover:border-rose-300'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Plan textarea, shown for redFlag or unsure */}
+            {(value.status === 'redFlag' || value.status === 'unsure') && (
+              <div className="space-y-1">
+                <label className="text-[11px] font-medium text-slate-600">
+                  Planned follow-up / actions
+                  <span className="text-slate-400 font-normal"> (optional)</span>
+                </label>
+                <textarea
+                  className="w-full text-xs rounded-lg border border-slate-200 px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-rose-400/60 focus:border-rose-400 resize-vertical min-h-[60px]"
+                  placeholder="E.g., schedule meeting with student, discuss with LIC director, increase observation, etc."
+                  value={value.plan}
+                  onChange={e =>
+                    updateRedFlagBenchmark(comp.key, { plan: e.target.value })
+                  }
+                />
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  </div>
+)}
       {step === 5 && (
         <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-5">
           <div>
