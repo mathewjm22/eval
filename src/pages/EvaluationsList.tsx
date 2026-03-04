@@ -1,15 +1,14 @@
 import { useState, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAppData } from '../context';
-import { PHASE_CONFIG, SCORE_CATEGORIES, SCORE_LABELS, RED_FLAG_COMPETENCIES, SessionEvaluation } from '../types';
+import {
+  PHASE_CONFIG,
+  SCORE_CATEGORIES,
+  SCORE_LABELS,
+  RED_FLAG_COMPETENCIES,
+} from '../types';
 
-// helper shared logic
-function evalHasRedFlag(ev: SessionEvaluation) {
-  const rf = ev.redFlagBenchmarks;
-  if (!rf) return false;
-  return Object.values(rf).some(v => v && v.status === 'redFlag');
-}
-
+// Helpers for mid-year / final time windows
 function isMidYearWindow(weekNumber: number) {
   return weekNumber >= 13 && weekNumber <= 16;
 }
@@ -20,6 +19,7 @@ function isFinalWindow(weekNumber: number) {
 export function EvaluationsList() {
   const { data, deleteEvaluation } = useAppData();
   const navigate = useNavigate();
+
   const [filterStudent, setFilterStudent] = useState<string>('all');
   const [filterPhase, setFilterPhase] = useState<string>('all');
   const [sortBy, setSortBy] = useState<'date' | 'week' | 'rating'>('date');
@@ -27,20 +27,26 @@ export function EvaluationsList() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const getStudentName = (id: string) =>
-    data.students.find(s => s.id === id)?.name || 'Unknown';
+    data.students.find((s) => s.id === id)?.name || 'Unknown';
 
   const filtered = useMemo(() => {
     let evals = [...data.evaluations];
-    if (filterStudent !== 'all')
-      evals = evals.filter(e => e.studentId === filterStudent);
-    if (filterPhase !== 'all') evals = evals.filter(e => e.phase === filterPhase);
+
+    if (filterStudent !== 'all') {
+      evals = evals.filter((e) => e.studentId === filterStudent);
+    }
+    if (filterPhase !== 'all') {
+      evals = evals.filter((e) => e.phase === filterPhase);
+    }
 
     evals.sort((a, b) => {
-      if (sortBy === 'date')
-        return (
-          new Date(b.date).getTime() - new Date(a.date).getTime()
-        );
-      if (sortBy === 'week') return b.weekNumber - a.weekNumber;
+      if (sortBy === 'date') {
+        return new Date(b.date).getTime() - new Date(a.date).getTime();
+      }
+      if (sortBy === 'week') {
+        return b.weekNumber - a.weekNumber;
+      }
+      // rating
       return b.overallRating - a.overallRating;
     });
 
@@ -55,12 +61,12 @@ export function EvaluationsList() {
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-slate-800">📋 All Evaluations</h2>
           <p className="text-sm text-slate-400 mt-1">
-            {filtered.length} evaluation
-            {filtered.length !== 1 ? 's' : ''} found
+            {filtered.length} evaluation{filtered.length !== 1 ? 's' : ''} found
           </p>
         </div>
         <Link
@@ -80,11 +86,11 @@ export function EvaluationsList() {
             </label>
             <select
               value={filterStudent}
-              onChange={e => setFilterStudent(e.target.value)}
+              onChange={(e) => setFilterStudent(e.target.value)}
               className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none"
             >
               <option value="all">All Students</option>
-              {data.students.map(s => (
+              {data.students.map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.name}
                 </option>
@@ -97,7 +103,7 @@ export function EvaluationsList() {
             </label>
             <select
               value={filterPhase}
-              onChange={e => setFilterPhase(e.target.value)}
+              onChange={(e) => setFilterPhase(e.target.value)}
               className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none"
             >
               <option value="all">All Phases</option>
@@ -112,7 +118,7 @@ export function EvaluationsList() {
             </label>
             <select
               value={sortBy}
-              onChange={e =>
+              onChange={(e) =>
                 setSortBy(e.target.value as 'date' | 'week' | 'rating')
               }
               className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none"
@@ -140,30 +146,32 @@ export function EvaluationsList() {
         </div>
       ) : (
         <div className="space-y-3">
-          {filtered.map(ev => {
+          {filtered.map((ev) => {
             const phaseConf = PHASE_CONFIG[ev.phase];
             const isExpanded = expandedId === ev.id;
+
             const scoreAvg = (
               (Object.values(ev.scores) as number[]).reduce(
                 (a, b) => a + b,
-                0,
+                0
               ) / Object.values(ev.scores).length
             ).toFixed(1);
-            const hasRedFlag = evalHasRedFlag(ev);
-            const midWindow = isMidYearWindow(ev.weekNumber) && ev.phase === 'middle';
+
+            // mid-year / final "window" badges
+            const midWindow =
+              isMidYearWindow(ev.weekNumber) && ev.phase === 'middle';
             const finalWindow =
               isFinalWindow(ev.weekNumber) && ev.phase === 'final';
 
-            // Red-flag info for this evaluation
             const rf = ev.redFlagBenchmarks;
             const hasAnyRedFlagInfo =
               rf &&
               Object.values(rf).some(
-                v =>
+                (v) =>
                   v &&
                   (v.status === 'redFlag' ||
                     v.status === 'unsure' ||
-                    (v.plan ?? '').trim() !== ''),
+                    (v.plan ?? '').trim() !== '')
               );
 
             return (
@@ -171,6 +179,7 @@ export function EvaluationsList() {
                 key={ev.id}
                 className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden hover:shadow-md transition-shadow"
               >
+                {/* Row header */}
                 <div
                   className="p-4 sm:p-5 cursor-pointer flex items-center justify-between gap-4"
                   onClick={() =>
@@ -210,11 +219,6 @@ export function EvaluationsList() {
                           </span>
                         )}
                       </div>
-                      {hasRedFlag && (
-                        <span className="text-[10px] text-rose-500">
-                          ⚠️ Red-flag concerns
-                        </span>
-                      )}
                     </div>
                     <span
                       className={`text-lg font-bold ${
@@ -245,15 +249,16 @@ export function EvaluationsList() {
                   </div>
                 </div>
 
+                {/* Expanded details */}
                 {isExpanded && (
                   <div className="border-t border-slate-100 p-4 sm:p-5 space-y-5 bg-slate-50/50">
-                    {/* Scores Grid */}
+                    {/* Scores grid */}
                     <div>
                       <h4 className="font-semibold text-slate-700 text-sm mb-3">
                         Competency Scores
                       </h4>
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                        {SCORE_CATEGORIES.map(cat => (
+                        {SCORE_CATEGORIES.map((cat) => (
                           <div
                             key={cat.key}
                             className="bg-white rounded-lg p-3 border border-slate-100 text-center"
@@ -286,7 +291,7 @@ export function EvaluationsList() {
                       </p>
                     </div>
 
-                    {/* Feedback */}
+                    {/* Narrative feedback */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       {ev.strengths && (
                         <div className="bg-emerald-50 rounded-lg p-3 border border-emerald-100">
@@ -330,14 +335,14 @@ export function EvaluationsList() {
                       )}
                     </div>
 
-                    {/* Internal Medicine Red-Flag Benchmarks */}
+                    {/* Internal Medicine red-flag benchmarks */}
                     {hasAnyRedFlagInfo && (
                       <div className="bg-rose-50 rounded-xl p-4 border border-rose-200 space-y-3">
                         <h4 className="font-semibold text-rose-800 text-sm">
                           Internal Medicine Benchmarks – Red Flags (Mid-Year / End-of-Rotation)
                         </h4>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
-                          {RED_FLAG_COMPETENCIES.map(comp => {
+                          {RED_FLAG_COMPETENCIES.map((comp) => {
                             const val = rf?.[comp.key];
                             if (!val) return null;
                             if (
@@ -391,7 +396,7 @@ export function EvaluationsList() {
                     {/* Actions */}
                     <div className="flex gap-2 pt-2">
                       <button
-                        onClick={e => {
+                        onClick={(e) => {
                           e.stopPropagation();
                           navigate(`/evaluations/${ev.id}`);
                         }}
@@ -402,7 +407,7 @@ export function EvaluationsList() {
                       {showDeleteConfirm === ev.id ? (
                         <div className="flex gap-1">
                           <button
-                            onClick={e => {
+                            onClick={(e) => {
                               e.stopPropagation();
                               handleDelete(ev.id);
                             }}
@@ -411,7 +416,7 @@ export function EvaluationsList() {
                             Confirm Delete
                           </button>
                           <button
-                            onClick={e => {
+                            onClick={(e) => {
                               e.stopPropagation();
                               setShowDeleteConfirm(null);
                             }}
@@ -422,7 +427,7 @@ export function EvaluationsList() {
                         </div>
                       ) : (
                         <button
-                          onClick={e => {
+                          onClick={(e) => {
                             e.stopPropagation();
                             setShowDeleteConfirm(ev.id);
                           }}
