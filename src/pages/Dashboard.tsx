@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAppData } from '../context';
-import { PHASE_CONFIG, SCORE_CATEGORIES } from '../types';
+import { PHASE_CONFIG, SCORE_CATEGORIES, SessionEvaluation } from '../types';
 
 export function Dashboard() {
   const { data } = useAppData();
@@ -28,6 +28,24 @@ export function Dashboard() {
     return (sum / evaluations.length).toFixed(1);
   }, [evaluations]);
 
+// helper
+const hasRedFlag = (ev: SessionEvaluation) =>
+  !!ev.redFlagBenchmarks &&
+  Object.values(ev.redFlagBenchmarks).some(v => v && v.status === 'redFlag');
+
+// inside Dashboard:
+const redFlagEvalCount = useMemo(
+  () => evaluations.filter(hasRedFlag).length,
+  [evaluations]
+);
+
+const redFlagStudentCount = useMemo(() => {
+  const set = new Set<string>();
+  evaluations.forEach(ev => {
+    if (hasRedFlag(ev)) set.add(ev.studentId);
+  });
+  return set.size;
+}, [evaluations]);
   const categoryAverages = useMemo(() => {
     if (!evaluations.length) return null;
     return SCORE_CATEGORIES.map(cat => ({
@@ -115,6 +133,23 @@ export function Dashboard() {
             </p>
           )}
         </div>
+        {/* Red-flag snapshot */}
+<div className="rounded-2xl bg-rose-950 border border-rose-800 p-4 flex items-center justify-between gap-3">
+  <div>
+    <p className="text-xs text-rose-200/80 font-semibold uppercase tracking-wide">
+      Internal Medicine Red Flags
+    </p>
+    <p className="mt-1 text-sm text-rose-100">
+      {redFlagEvalCount} evaluation{redFlagEvalCount !== 1 ? 's' : ''} with benchmarks flagged
+    </p>
+  </div>
+  <div className="text-right">
+    <p className="text-3xl font-bold text-rose-300">{redFlagStudentCount}</p>
+    <p className="text-[11px] text-rose-200/80">
+      student{redFlagStudentCount !== 1 ? 's' : ''} affected
+    </p>
+  </div>
+</div>
       </div>
 
       {/* Middle row: recent + category averages */}
@@ -260,4 +295,5 @@ export function Dashboard() {
     </div>
   );
 }
+
 
