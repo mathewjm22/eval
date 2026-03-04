@@ -8,10 +8,10 @@ import { useTheme } from "../theme";
 const NAV_ITEMS = [
   { path: "/", label: "Dashboard" },
   { path: "/students", label: "Students" },
-  { path: "/evaluate", label: "New Evaluation" },
+  { path: "/evaluate", label: "New Evaluation" },   // <-- this is the sidebar item
   { path: "/evaluations", label: "All Evaluations" },
   { path: "/progress", label: "Progress View" },
-  { path: "/calendar", label: "Calendar" },   // NEW
+  { path: "/calendar", label: "Calendar" },
   { path: "/settings", label: "Settings" },
 ];
 
