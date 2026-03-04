@@ -2,7 +2,9 @@ import { useMemo } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useAppData } from '../context';
 import { PHASE_CONFIG, SessionEvaluation } from '../types';
+import { isMidYearWeek, isEndOfYearWeek } from '../benchmarkWindows';
 import { IM_BENCHMARKS } from '../imBenchmarks';
+
 
 function evalHasRedFlag(ev: SessionEvaluation): boolean {
   const rf = ev.redFlagBenchmarks;
@@ -10,13 +12,6 @@ function evalHasRedFlag(ev: SessionEvaluation): boolean {
   return Object.values(rf).some(v => v && v.status === 'redFlag');
 }
 
-// Week-based windows around formal mid-year / final
-function isMidYearWeek(weekNumber: number) {
-  return weekNumber >= 13 && weekNumber <= 16;
-}
-function isEndOfYearWeek(weekNumber: number) {
-  return weekNumber >= 31 && weekNumber <= 34;
-}
 
 export function RotationSummary() {
   const { studentId } = useParams<{ studentId: string }>();
