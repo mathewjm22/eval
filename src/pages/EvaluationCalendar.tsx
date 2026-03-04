@@ -156,8 +156,8 @@ export function EvaluationCalendar() {
       </div>
 
       {/* Calendar grid */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm">
-        <div className="grid grid-cols-7 text-center text-xs font-semibold text-slate-400 mb-2">
+      <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm space-y-3">
+        <div className="grid grid-cols-7 text-center text-xs font-semibold text-slate-400">
           {WEEKDAYS.map(d => (
             <div key={d} className="py-1">
               {d}
@@ -230,6 +230,22 @@ export function EvaluationCalendar() {
               </button>
             );
           })}
+        </div>
+
+        {/* Legend */}
+        <div className="flex items-center gap-4 text-[11px] text-slate-500 pt-1">
+          <div className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-emerald-400" />
+            <span>Evaluations on this day</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-rose-400" />
+            <span>One or more evaluations with red-flag concerns</span>
+          </div>
+          <div className="ml-auto flex items-center gap-1.5">
+            <span className="h-3 w-3 rounded-md border border-lime-400" />
+            <span>Selected day</span>
+          </div>
         </div>
       </div>
 
