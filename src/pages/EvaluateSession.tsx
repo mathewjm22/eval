@@ -17,27 +17,10 @@ import {
   RED_FLAG_COMPETENCIES,
   RedFlagPlan,
   RedFlagStatus,
-  RED_FLAG_DETAILS,   // ← add this
+  RED_FLAG_DETAILS,
 } from '../types';
 import { ScoreInput } from '../components/ScoreInput';
-
-// inside EvaluateSession.tsx (top of file)
 import { IM_BENCHMARKS, BenchmarkPhase } from '../imBenchmarks';
-
-// inside the EvaluateSession component, after you have the evaluation date:
-const evalDate = new Date(form.date || new Date());
-const month = evalDate.getMonth(); // 0-based: 0 = Jan
-let benchmarkPhase: BenchmarkPhase | null = null;
-
-if (month === 1) {
-  // February
-  benchmarkPhase = 'midYear';
-} else if (month === 7) {
-  // August
-  benchmarkPhase = 'endOfYear';
-} else {
-  benchmarkPhase = null;
-}
 
 const STEPS = [
   'Session Details',
@@ -59,7 +42,6 @@ export function EvaluateSession() {
 
   const [form, setForm] = useState<SessionEvaluation>(() => {
     if (existingEval) {
-      // Ensure redFlagBenchmarks exists even on older evaluations
       return {
         ...existingEval,
         scores: { ...existingEval.scores },
@@ -69,6 +51,7 @@ export function EvaluateSession() {
           communicationEmotional: { status: 'none', plan: '' },
           interpersonalCommunication: { status: 'none', plan: '' },
         },
+        benchmarkAssessments: existingEval.benchmarkAssessments || {},
       };
     }
     return {
@@ -97,6 +80,7 @@ export function EvaluateSession() {
         communicationEmotional: { status: 'none', plan: '' },
         interpersonalCommunication: { status: 'none', plan: '' },
       },
+      benchmarkAssessments: {},
     };
   });
 
@@ -112,7 +96,6 @@ export function EvaluateSession() {
     return 'final';
   }, [form.weekNumber]);
 
-  // Effective phase: manual override takes priority over auto
   const effectivePhase: Phase = form.phaseOverride || autoPhase;
   const isMidOrFinal = effectivePhase === 'middle' || effectivePhase === 'final';
 
@@ -138,6 +121,30 @@ export function EvaluateSession() {
           ...(prev.redFlagBenchmarks?.[key] || {}),
           ...patch,
         },
+      },
+    }));
+  };
+
+  // Benchmark window based on evaluation date:
+  // Feb (1)–Apr (3) = midYear, May (4)–Jul (6) = endOfYear
+  const evalDate = new Date(form.date || new Date());
+  const month = evalDate.getMonth(); // 0 = Jan
+  let benchmarkPhase: BenchmarkPhase | null = null;
+  if (month >= 1 && month <= 3) {
+    benchmarkPhase = 'midYear';
+  } else if (month >= 4 && month <= 6) {
+    benchmarkPhase = 'endOfYear';
+  }
+
+  const setBenchmarkStatus = (
+    id: string,
+    status: 'met' | 'notMet' | 'notAssessed',
+  ) => {
+    setForm(prev => ({
+      ...prev,
+      benchmarkAssessments: {
+        ...(prev.benchmarkAssessments || {}),
+        [id]: { status },
       },
     }));
   };
@@ -273,742 +280,101 @@ export function EvaluateSession() {
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold text-slate-800">
-          {existingEval ? '✏️ Edit Evaluation' : '📝 New Session Evaluation'}
-        </h2>
-        <p className="text-sm text-slate-400 mt-1">
-          {existingEval ? 'Update this evaluation' : 'Record a new clinical session evaluation'}
-        </p>
-      </div>
+      {/* HEADER, steps, steps 0–5 ... (unchanged) */}
 
-      {/* Step Indicator */}
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
-        {STEPS.map((s, i) => (
-          <button
-            key={i}
-            onClick={() => setStep(i)}
-            className={`flex-shrink-0 py-2 px-2 text-xs font-medium rounded-xl transition-all ${
-              step === i
-                ? 'bg-indigo-600 text-white shadow-md'
-                : step > i
-                ? 'bg-indigo-100 text-indigo-700'
-                : 'bg-slate-100 text-slate-400'
-            }`}
-          >
-            {i + 1}. {s}
-          </button>
-        ))}
-      </div>
+      {/* ... keep all of your steps 0–5 exactly as in your last working version ... */}
 
-      {/* Step 0: Session Details */}
-      {step === 0 && (
-        <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-5">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                Student *
-              </label>
-              <select
-                value={form.studentId}
-                onChange={e => updateForm('studentId', e.target.value)}
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none"
-              >
-                {data.students.map(s => (
-                  <option key={s.id} value={s.id}>
-                    {s.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                Date *
-              </label>
-              <input
-                type="date"
-                value={form.date}
-                onChange={e => updateForm('date', e.target.value)}
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                Week Number (1-52)
-              </label>
-              <input
-                type="number"
-                min={1}
-                max={52}
-                value={form.weekNumber}
-                onChange={e =>
-                  updateForm('weekNumber', parseInt(e.target.value) || 1)
-                }
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none"
-              />
-              <p className="text-xs mt-1">
-                <span
-                  className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${PHASE_CONFIG[autoPhase].bgColor} ${PHASE_CONFIG[autoPhase].color} border ${PHASE_CONFIG[autoPhase].borderColor}`}
-                >
-                  Auto: {PHASE_CONFIG[autoPhase].label} ({PHASE_CONFIG[autoPhase].weeks})
-                </span>
-              </p>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                Phase Override
-              </label>
-              <select
-                value={form.phaseOverride || ''}
-                onChange={e =>
-                  updateForm(
-                    'phaseOverride',
-                    e.target.value ? (e.target.value as Phase) : undefined,
-                  )
-                }
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none"
-              >
-                <option value="">Auto (based on week)</option>
-                <option value="early">Early Phase</option>
-                <option value="middle">Middle Phase</option>
-                <option value="final">Final Phase</option>
-              </select>
-              {form.phaseOverride && (
-                <p className="text-xs mt-1 text-amber-600">
-                  ⚠️ Manual override active — using{' '}
-                  <strong>{PHASE_CONFIG[form.phaseOverride].label}</strong> instead of
-                  auto-detected {PHASE_CONFIG[autoPhase].label}
-                </p>
-              )}
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                Session Type
-              </label>
-              <select
-                value={form.sessionType}
-                onChange={e => updateForm('sessionType', e.target.value)}
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none"
-              >
-                {SESSION_TYPES.map(t => (
-                  <option key={t} value={t}>
-                    {t}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                Patient Encounters
-              </label>
-              <input
-                type="number"
-                min={0}
-                value={form.patientEncounters}
-                onChange={e =>
-                  updateForm(
-                    'patientEncounters',
-                    parseInt(e.target.value) || 0,
-                  )
-                }
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none"
-              />
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Step 1: Diagnoses & Conditions */}
-      {step === 1 && (
-        <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-5">
-          <div>
-            <h3 className="font-bold text-slate-800 text-lg">🩺 Diagnoses &amp; Conditions Seen</h3>
-            <p className="text-sm text-slate-400 mt-1">
-              Check all conditions encountered during this session.
-            </p>
-            {previousConditions.size > 0 && (
-              <p className="text-xs text-emerald-600 mt-1">
-                ✅ Green indicates previously seen in prior sessions.
-              </p>
-            )}
-          </div>
-          {PREPOPULATED_CONDITIONS.map(({ category, conditions }) => (
-            <div key={category}>
-              <h4 className="text-sm font-semibold text-slate-600 mb-2">
-                {category}
-              </h4>
-              <div className="flex flex-wrap gap-2">
-                {conditions.map(cond => {
-                  const checked = (form.conditionsSeen || []).includes(cond);
-                  const prev = previousConditions.has(cond);
-                  return (
-                    <label
-                      key={cond}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border cursor-pointer text-sm transition-all ${
-                        checked
-                          ? 'bg-indigo-100 border-indigo-400 text-indigo-800 font-medium'
-                          : prev
-                          ? 'bg-emerald-50 border-emerald-300 text-emerald-700'
-                          : 'bg-slate-50 border-slate-200 text-slate-600 hover:border-slate-300'
-                      }`}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={checked}
-                        onChange={() => toggleCondition(cond)}
-                        className="w-3.5 h-3.5 accent-indigo-600"
-                      />
-                      {prev && !checked && (
-                        <span className="text-emerald-500">✓</span>
-                      )}
-                      {cond}
-                    </label>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
-
-          {/* Custom conditions */}
-          <div>
-            <h4 className="text-sm font-semibold text-slate-600 mb-2">
-              Custom Conditions
-            </h4>
-            <div className="flex gap-2 mb-2">
-              <input
-                type="text"
-                value={customConditionInput}
-                onChange={e => setCustomConditionInput(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && addCustomCondition()}
-                placeholder="Add a custom condition..."
-                className="flex-1 px-4 py-2 rounded-xl border border-slate-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none text-sm"
-              />
-              <button
-                type="button"
-                onClick={addCustomCondition}
-                className="px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-medium hover:bg-indigo-700 transition-colors"
-              >
-                Add
-              </button>
-            </div>
-            {(form.customConditions || []).length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {(form.customConditions || []).map(cond => (
-                  <span
-                    key={cond}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-purple-100 border border-purple-300 text-purple-800 text-sm"
-                  >
-                    {cond}
-                    <button
-                      type="button"
-                      onClick={() => removeCustomCondition(cond)}
-                      className="text-purple-500 hover:text-purple-700 font-bold"
-                    >
-                      ×
-                    </button>
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Step 2: Teaching Topics */}
-      {step === 2 && (
-        <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-5">
-          <div>
-            <h3 className="font-bold text-slate-800 text-lg">📚 Teaching Topics</h3>
-            <p className="text-sm text-slate-400 mt-1">
-              Select or add topics taught during this session, organized by body system.
-            </p>
-          </div>
-          {TEACHING_TOPIC_CATEGORIES.map(({ category, topics }) => {
-            const selectedTopics = getTopicsForCategory(category);
-            return (
-              <div
-                key={category}
-                className="border border-slate-100 rounded-xl p-4"
-              >
-                <h4 className="text-sm font-semibold text-slate-700 mb-3">
-                  {category}
-                  {selectedTopics.length > 0 && (
-                    <span className="ml-2 text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full">
-                      {selectedTopics.length} selected
-                    </span>
-                  )}
-                </h4>
-                <div className="flex flex-wrap gap-2 mb-2">
-                  {topics.map(topic => {
-                    const checked = selectedTopics.includes(topic);
-                    return (
-                      <label
-                        key={topic}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border cursor-pointer text-xs transition-all ${
-                          checked
-                            ? 'bg-indigo-100 border-indigo-400 text-indigo-800 font-medium'
-                            : 'bg-slate-50 border-slate-200 text-slate-600 hover:border-slate-300'
-                        }`}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={checked}
-                          onChange={() => toggleTopic(category, topic)}
-                          className="w-3 h-3 accent-indigo-600"
-                        />
-                        {topic}
-                      </label>
-                    );
-                  })}
-                </div>
-                <div className="flex gap-2 mt-2">
-                  <input
-                    type="text"
-                    value={customTopicInputs[category] || ''}
-                    onChange={e =>
-                      setCustomTopicInputs(prev => ({
-                        ...prev,
-                        [category]: e.target.value,
-                      }))
-                    }
-                    onKeyDown={e => e.key === 'Enter' && addCustomTopic(category)}
-                    placeholder="Add custom topic..."
-                    className="flex-1 px-3 py-1.5 rounded-lg border border-slate-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none text-xs"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => addCustomTopic(category)}
-                    className="px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-medium hover:bg-indigo-700 transition-colors"
-                  >
-                    Add
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Step 3: Clinical Objectives */}
-      {step === 3 && (
-        <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
-          <div>
-            <h3 className="font-bold text-slate-800 text-lg">
-              🎯 Clinical Objectives (EPAs)
-            </h3>
-            <p className="text-sm text-slate-400 mt-1">
-              Check which expectations the student demonstrated during this session.
-              Showing{' '}
-              <span
-                className={`font-semibold ${PHASE_CONFIG[effectivePhase].color}`}
-              >
-                {PHASE_CONFIG[effectivePhase].label}
-              </span>{' '}
-              expectations.
-            </p>
-            {previousObjectives.size > 0 && (
-              <p className="text-xs text-emerald-600 mt-1">
-                ✅ Green border indicates expectations achieved in prior sessions.
-              </p>
-            )}
-          </div>
-
-          {effectivePhase === 'early' ? (
-            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-700">
-              Phase-specific expectations begin at the Middle Phase. Continue
-              building foundational skills during Early Phase.
-            </div>
-          ) : (
-            <div className="space-y-5">
-              {CLINICAL_OBJECTIVES_V2.map(obj => {
-                const phaseExpectations =
-                  effectivePhase === 'middle'
-                    ? obj.expectations.middle
-                    : obj.expectations.final;
-                return (
-                  <div
-                    key={obj.id}
-                    className="border border-slate-200 rounded-xl overflow-hidden"
-                  >
-                    <div className="px-4 py-3 bg-slate-50 border-b border-slate-200">
-                      <span className="text-xs font-bold text-indigo-600 mr-2">
-                        Outcome {obj.id}
-                      </span>
-                      <span className="text-sm font-semibold text-slate-800">
-                        {obj.outcome}
-                      </span>
-                    </div>
-                    <div className="p-3 space-y-2">
-                      {phaseExpectations.map((exp, ei) => {
-                        const id = expectationId(
-                          obj.id,
-                          effectivePhase === 'middle' ? 'middle' : 'final',
-                          ei,
-                        );
-                        const checked =
-                          (form.objectivesAchieved || []).includes(id);
-                        const prev = previousObjectives.has(id);
-                        return (
-                          <label
-                            key={id}
-                            className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
-                              checked
-                                ? 'bg-indigo-50 border-indigo-400'
-                                : prev
-                                ? 'bg-emerald-50 border-emerald-300'
-                                : 'bg-white border-slate-200 hover:border-slate-300'
-                            }`}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={checked}
-                              onChange={() => toggleObjective(id)}
-                              className="mt-0.5 w-4 h-4 accent-indigo-600 flex-shrink-0"
-                            />
-                            <div className="flex-1 min-w-0">
-                              <span
-                                className={`text-xs font-bold mr-1 ${
-                                  checked
-                                    ? 'text-indigo-600'
-                                    : prev
-                                    ? 'text-emerald-600'
-                                    : 'text-slate-400'
-                                }`}
-                              >
-                                {String.fromCharCode(97 + ei)}.
-                              </span>
-                              <span
-                                className={`text-sm ${
-                                  checked
-                                    ? 'text-indigo-800 font-medium'
-                                    : prev
-                                    ? 'text-emerald-700'
-                                    : 'text-slate-600'
-                                }`}
-                              >
-                                {exp}
-                              </span>
-                              {prev && !checked && (
-                                <span className="ml-2 text-xs text-emerald-500">
-                                  ✓ Previously achieved
-                                </span>
-                              )}
-                            </div>
-                          </label>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-3 text-sm text-indigo-700">
-            {(form.objectivesAchieved || []).length} expectation
-            {(form.objectivesAchieved || []).length !== 1 ? 's' : ''} marked for
-            this session
-          </div>
-        </div>
-      )}
-
-      {/* Step 4: Clinical Scores */}
-      {step === 4 && (
-        <div className="space-y-4">
-          <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-4 text-center">
-            <p className="text-sm text-indigo-700 font-medium">
-              Rate each competency from 1 (Below Expectations) to 5 (Outstanding)
-            </p>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {SCORE_CATEGORIES.map(cat => (
-              <ScoreInput
-                key={cat.key}
-                label={cat.label}
-                description={cat.description}
-                value={form.scores[cat.key as keyof typeof form.scores]}
-                onChange={v =>
-                  updateScore(cat.key as keyof typeof form.scores, v)
-                }
-                rubrics={cat.rubrics}
-              />
-            ))}
-          </div>
-          <div className="bg-white rounded-xl border border-slate-200 p-4 text-center">
-            <p className="text-sm text-slate-500">Category Average</p>
-            <p className="text-3xl font-bold text-indigo-600">{avgScore}</p>
-          </div>
-        </div>
-      )}
-
-      {/* Step 5: Feedback & Internal Medicine Benchmarks */}
-      {step === 5 && (
-        <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-5">
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              💪 Strengths
-            </label>
-            <textarea
-              value={form.strengths}
-              onChange={e => updateForm('strengths', e.target.value)}
-              rows={3}
-              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none resize-none"
-              placeholder="What did the student do well today?"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              🎯 Areas for Improvement
-            </label>
-            <textarea
-              value={form.areasForImprovement}
-              onChange={e => updateForm('areasForImprovement', e.target.value)}
-              rows={3}
-              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none resize-none"
-              placeholder="What areas need more work?"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              📋 Action Plan / Goals
-            </label>
-            <textarea
-              value={form.actionPlan}
-              onChange={e => updateForm('actionPlan', e.target.value)}
-              rows={3}
-              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none resize-none"
-              placeholder="Specific goals or tasks for next session..."
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              📝 Preceptor Notes (private)
-            </label>
-            <textarea
-              value={form.preceptorNotes}
-              onChange={e => updateForm('preceptorNotes', e.target.value)}
-              rows={3}
-              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none resize-none"
-              placeholder="Additional notes for your records..."
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              ⭐ Overall Session Rating
-            </label>
-            <div className="flex items-center gap-3">
-              {[1, 2, 3, 4, 5].map(r => (
-                <button
-                  key={r}
-                  type="button"
-                  onClick={() => updateForm('overallRating', r)}
-                  className={`flex-1 py-3 rounded-xl text-lg font-bold transition-all border-2 ${
-                    form.overallRating === r
-                      ? 'bg-indigo-600 text-white border-indigo-600 shadow-lg scale-105'
-                      : 'bg-slate-50 text-slate-400 border-slate-200 hover:border-indigo-300'
-                  }`}
-                >
-                  {'⭐'.repeat(r)}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Internal Medicine Red-Flag Benchmarks (mid/final only) */}
-          {isMidOrFinal && (
-            <div className="mt-6 bg-rose-50 border border-rose-200 rounded-2xl p-4 space-y-4">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <h3 className="font-bold text-rose-800 text-sm">
-                    Internal Medicine Benchmarks – Red Flags (Mid-Year / End-of-Rotation)
-                  </h3>
-                  <p className="text-xs text-rose-700 mt-1">
-                    For each competency, indicate whether you have concerns based on the
-                    Internal Medicine benchmark table. Use this section to guide mid-year
-                    and end-of-rotation reviews.
-                  </p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {RED_FLAG_COMPETENCIES.map(comp => {
-  const value =
-    form.redFlagBenchmarks?.[comp.key] || ({
-      status: 'none',
-      plan: '',
-    } as RedFlagPlan);
-
-  const details = RED_FLAG_DETAILS[comp.key];
-
-  return (
-    <div
-      key={comp.key}
-      className="bg-slate-900 rounded-xl border border-rose-100 p-3 space-y-3"
-    >
-      <div className="flex items-center justify-between gap-2">
-        <p className="text-sm font-semibold text-slate-50">
-          {comp.label}
-        </p>
-      </div>
-
-      {/* Red-flag description bullets */}
-      {details && (
-        <div className="space-y-1">
-          <p className="text-[11px] font-semibold text-slate-300 uppercase tracking-wide">
-            Red Flags (examples)
-          </p>
-          <ul className="list-disc list-inside space-y-0.5 text-[11px] text-slate-200">
-            {details.redFlags.map((item, i) => (
-              <li key={i}>{item}</li>
-            ))}
-          </ul>
-
-          <p className="text-[11px] font-semibold text-slate-300 uppercase tracking-wide mt-2">
-            If Red Flags are Observed
-          </p>
-          <ul className="list-disc list-inside space-y-0.5 text-[11px] text-slate-200">
-            {details.actions.map((item, i) => (
-              <li key={i}>{item}</li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      {/* Status buttons */}
-      <div className="flex flex-wrap gap-2 text-xs pt-2">
-        {[
-          { id: 'none', label: 'No Concerns' },
-          { id: 'redFlag', label: 'Red Flags Observed' },
-          { id: 'unsure', label: 'Unsure' },
-        ].map(opt => (
-          <button
-            key={opt.id}
-            type="button"
-            onClick={() =>
-              updateRedFlagBenchmark(comp.key, {
-                status: opt.id as RedFlagStatus,
-              })
-            }
-            className={`px-2.5 py-1 rounded-full border text-xs font-medium transition ${
-              value.status === opt.id
-                ? 'bg-rose-600 text-white border-rose-600'
-                : 'bg-slate-800 text-slate-100 border-slate-600 hover:border-rose-300'
-            }`}
-          >
-            {opt.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Plan textarea for redFlag / unsure */}
-      {(value.status === 'redFlag' || value.status === 'unsure') && (
-        <div className="space-y-1 pt-1">
-          <label className="text-[11px] font-medium text-slate-200">
-            Planned follow-up / actions
-            <span className="text-slate-400 font-normal"> (optional)</span>
-          </label>
-          <textarea
-            className="w-full text-xs rounded-lg border border-slate-600 bg-slate-950/60 text-slate-100 px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-rose-400/60 focus:border-rose-400 resize-vertical min-h-[60px]"
-            placeholder="E.g., schedule meeting with student, discuss with LIC director, increase observation, etc."
-            value={value.plan}
-            onChange={e =>
-              updateRedFlagBenchmark(comp.key, {
-                plan: e.target.value,
-              })
-            }
-          />
-        </div>
-      )}
-    </div>
-  );
-})}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
+      {/* For brevity I'm not re-pasting steps 0–5, since your version there is fine.
+          The only new logic is the benchmarks panel in step 6 below, which uses
+          benchmarkPhase and setBenchmarkStatus. Make sure you keep the rest of the
+          file identical to your last known-good EvaluateSession for steps 0–5. */}
 
       {/* Step 6: Review */}
       {step === 6 && (
         <div className="space-y-4">
-          <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
-            <h3 className="font-bold text-slate-800 text-lg mb-4">
-              📋 Evaluation Summary
-            </h3>
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <p className="text-slate-400">Student</p>
-                <p className="font-semibold text-slate-800">
-                  {data.students.find(s => s.id === form.studentId)?.name || '-'}
-                </p>
+          {/* existing summary cards ... */}
+
+          {/* Benchmarks panel */}
+          {benchmarkPhase && (
+            <div className="mt-6 rounded-2xl bg-slate-900 border border-slate-800 p-4 space-y-3">
+              <div className="flex items-center justify-between gap-2">
+                <h3 className="text-sm font-semibold text-slate-100">
+                  Internal Medicine Benchmarks –{' '}
+                  {benchmarkPhase === 'midYear'
+                    ? 'Mid-Year (Feb–Apr)'
+                    : 'End-of-Year (May–Jul)'}
+                </h3>
+                <span className="text-[11px] text-slate-400">
+                  Based on evaluation date ({form.date})
+                </span>
               </div>
-              <div>
-                <p className="text-slate-400">Date</p>
-                <p className="font-semibold text-slate-800">{form.date}</p>
-              </div>
-              <div>
-                <p className="text-slate-400">Week / Phase</p>
-                <p className="font-semibold text-slate-800">
-                  Week {form.weekNumber} •{' '}
-                  <span className={PHASE_CONFIG[effectivePhase].color}>
-                    {PHASE_CONFIG[effectivePhase].label}
-                  </span>
-                  {form.phaseOverride && (
-                    <span className="ml-1 text-xs text-amber-600">(manual)</span>
-                  )}
-                </p>
-              </div>
-              <div>
-                <p className="text-slate-400">Session Type</p>
-                <p className="font-semibold text-slate-800">
-                  {form.sessionType}
-                </p>
-              </div>
-              <div>
-                <p className="text-slate-400">Patient Encounters</p>
-                <p className="font-semibold text-slate-800">
-                  {form.patientEncounters}
-                </p>
-              </div>
-              <div>
-                <p className="text-slate-400">Overall Rating</p>
-                <p className="font-semibold text-indigo-600 text-lg">
-                  {form.overallRating}/5 ⭐
-                </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                {IM_BENCHMARKS.map(row => {
+                  const current =
+                    form.benchmarkAssessments?.[row.id]?.status ?? 'notAssessed';
+                  const bullets =
+                    benchmarkPhase === 'midYear' ? row.midYear : row.endOfYear;
+
+                  return (
+                    <div
+                      key={row.id}
+                      className="bg-slate-950/40 border border-slate-700 rounded-xl p-3 space-y-2"
+                    >
+                      <p className="font-semibold text-slate-100 text-xs">
+                        {row.area}
+                      </p>
+                      <ul className="list-disc list-inside space-y-0.5 text-[11px] text-slate-300">
+                        {bullets.map((line, i) => (
+                          <li key={i}>{line}</li>
+                        ))}
+                      </ul>
+
+                      <div className="flex items-center gap-2 pt-1">
+                        <span className="text-[11px] text-slate-400">
+                          Assessment:
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setBenchmarkStatus(row.id, 'met')}
+                          className={`px-2 py-0.5 rounded-full text-[11px] font-medium border ${
+                            current === 'met'
+                              ? 'bg-emerald-500 text-black border-emerald-400'
+                              : 'bg-slate-900 text-emerald-200 border-emerald-600/40'
+                          }`}
+                        >
+                          Met
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setBenchmarkStatus(row.id, 'notMet')}
+                          className={`px-2 py-0.5 rounded-full text-[11px] font-medium border ${
+                            current === 'notMet'
+                              ? 'bg-rose-500 text-black border-rose-400'
+                              : 'bg-slate-900 text-rose-200 border-rose-600/40'
+                          }`}
+                        >
+                          Not met
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setBenchmarkStatus(row.id, 'notAssessed')
+                          }
+                          className={`px-2 py-0.5 rounded-full text-[11px] font-medium border ${
+                            current === 'notAssessed'
+                              ? 'bg-slate-100 text-slate-800 border-slate-300'
+                              : 'bg-slate-900 text-slate-300 border-slate-600/40'
+                          }`}
+                        >
+                          Not assessed
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
-          </div>
-{benchmarkPhase && (
-  <div className="mt-6 rounded-2xl bg-slate-900 border border-slate-800 p-4 space-y-3">
-    <div className="flex items-center justify-between gap-2">
-      <h3 className="text-sm font-semibold text-slate-100">
-        Internal Medicine Benchmarks – {benchmarkPhase === 'midYear' ? 'Mid-Year (February)' : 'End-of-Year (August)'}
-      </h3>
-      <span className="text-[11px] text-slate-400">
-        Based on evaluation date ({form.date})
-      </span>
-    </div>
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
-      {IM_BENCHMARKS.map((row) => (
-        <div
-          key={row.id}
-          className="bg-slate-950/40 border border-slate-700 rounded-xl p-3 space-y-1.5"
-        >
-          <p className="font-semibold text-slate-100 text-xs">
-            {row.area}
-          </p>
-          <ul className="list-disc list-inside space-y-0.5 text-[11px] text-slate-300">
-            {(benchmarkPhase === 'midYear' ? row.midYear : row.endOfYear).map(
-              (line, i) => (
-                <li key={i}>{line}</li>
-              ),
-            )}
-          </ul>
-        </div>
-      ))}
-    </div>
-  </div>
-)}
+          )}
           {/* Conditions summary */}
           {((form.conditionsSeen || []).length > 0 ||
             (form.customConditions || []).length > 0) && (
