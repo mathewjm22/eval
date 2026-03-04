@@ -221,7 +221,7 @@ export function Dashboard() {
         </div>
       </div>
 
-      {/* Preceptor profile reminder / quick actions */}
+            {/* Preceptor profile reminder / quick actions */}
       <div className="rounded-2xl bg-slate-900 border border-slate-800 p-4 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <div className="h-9 w-9 rounded-2xl bg-lime-400 text-black text-sm font-semibold flex items-center justify-center">
@@ -245,7 +245,7 @@ export function Dashboard() {
         <div className="flex gap-2">
           <Link
             to="/evaluate"
-            className="px-4 py-2 rounded-xl text-xs font-semibold bg-lime-400 text-black hover:bg-lime-300 transition-colors"
+            className="px-4 py-2 rounded-xl text-xs font-semibold bg-lime-400 text-black hover:bg-lime-300 transition-colors border border-lime-500/60 shadow-sm"
           >
             + New Evaluation
           </Link>
@@ -260,3 +260,4 @@ export function Dashboard() {
     </div>
   );
 }
+
