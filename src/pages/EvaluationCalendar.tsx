@@ -27,9 +27,7 @@ const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 function evalHasRedFlag(ev: SessionEvaluation): boolean {
   const rf = ev.redFlagBenchmarks;
   if (!rf) return false;
-  return Object.values(rf).some(
-    v => v && v.status === 'redFlag',
-  );
+  return Object.values(rf).some(v => v && v.status === 'redFlag');
 }
 
 export function EvaluationCalendar() {
@@ -114,6 +112,10 @@ export function EvaluationCalendar() {
     selectedDateIso && evaluationsByDate.get(selectedDateIso)
       ? evaluationsByDate.get(selectedDateIso)!
       : [];
+
+  const selectedPhases = new Set(
+    selectedEvals.map(ev => ev.phase),
+  );
 
   return (
     <div className="space-y-6">
@@ -261,86 +263,10 @@ export function EvaluationCalendar() {
                 Click an evaluation to view or edit.
               </p>
             </div>
-            <button
-              type="button"
-              onClick={() => setSelectedDateIso(null)}
-              className="text-xs text-slate-500 hover:text-slate-700"
-            >
-              Clear selection
-            </button>
-          </div>
-
-          {selectedEvals.length === 0 ? (
-            <p className="text-sm text-slate-500">
-              No evaluations found on this date.
-            </p>
-          ) : (
-            <div className="space-y-2">
-              {selectedEvals
-                .slice()
-                .sort(
-                  (a, b) =>
-                    new Date(a.date).getTime() -
-                    new Date(b.date).getTime(),
-                )
-                .map(ev => {
-                  const student =
-                    data.students.find(s => s.id === ev.studentId)?.name ||
-                    'Unknown student';
-                  const phaseConf = PHASE_CONFIG[ev.phase];
-                  const hasRedFlag = evalHasRedFlag(ev);
-
-                  return (
-                    <button
-                      key={ev.id}
-                      type="button"
-                      onClick={() => navigate(`/evaluate/${ev.id}`)}
-                      className={`w-full text-left rounded-xl px-3 py-2.5 flex items-center justify-between gap-3 transition-colors border ${
-                        hasRedFlag
-                          ? 'bg-rose-900 border-rose-700 hover:border-rose-400 hover:bg-rose-800'
-                          : 'bg-slate-900 border-slate-700 hover:border-indigo-400 hover:bg-slate-800'
-                      }`}
-                    >
-                      <div className="flex flex-col gap-0.5">
-                        <span className="text-sm font-semibold text-slate-50">
-                          {student}
-                        </span>
-                        <span className="text-[11px] text-slate-300">
-                          {ev.sessionType} • {ev.patientEncounters} patients
-                        </span>
-                        {hasRedFlag && (
-                          <span className="text-[10px] text-rose-200 font-medium">
-                            ⚠️ Red-flag concerns documented
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        <span
-                          className={`hidden sm:inline-block text-[10px] px-2 py-0.5 rounded-full font-medium ${phaseConf.bgColor} ${phaseConf.color} border ${phaseConf.borderColor}`}
-                        >
-                          {phaseConf.label}
-                        </span>
-                        <span
-                          className={`text-sm font-bold ${
-                            hasRedFlag
-                              ? 'text-rose-300'
-                              : ev.overallRating >= 4
-                              ? 'text-emerald-300'
-                              : ev.overallRating >= 3
-                              ? 'text-amber-300'
-                              : 'text-rose-300'
-                          }`}
-                        >
-                          {ev.overallRating}/5 ⭐
-                        </span>
-                      </div>
-                    </button>
-                  );
-                })}
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
+            <div className="flex items-center gap-2">
+              {/* Phase chips */}
+              {selectedPhases.has('early') && (
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 border border-blue-200">
+                  Early
+*
+
