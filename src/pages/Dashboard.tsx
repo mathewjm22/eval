@@ -2,11 +2,13 @@ import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useAppData } from '../context';
 import { PHASE_CONFIG, SCORE_CATEGORIES } from '../types';
+import { useNavigate } from 'react-router-dom';
 
 export function Dashboard() {
   const { data } = useAppData();
   const { students, evaluations, preceptor } = data;
-
+  const navigate = useNavigate();
+  
   const recentEvals = useMemo(() =>
     [...evaluations].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 5),
     [evaluations]
@@ -93,43 +95,72 @@ export function Dashboard() {
           </div>
         </div>
       )}
-
-      {/* Recent evaluations */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="font-bold text-slate-800 text-lg">🕐 Recent Evaluations</h3>
-          <Link to="/evaluations" className="text-xs text-indigo-600 hover:underline">View all →</Link>
-        </div>
-        {recentEvals.length === 0 ? (
-          <div className="text-center py-8">
-            <p className="text-4xl mb-3">📋</p>
-            <p className="text-slate-500 text-sm">No evaluations yet.</p>
-            <Link to="/evaluate" className="mt-3 inline-block text-sm text-indigo-600 hover:underline">Create your first →</Link>
+      {/* Recent Evaluations */}
+      <div className="rounded-2xl bg-slate-900 border border-slate-800 p-4 space-y-3">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <span className="text-lg">⏱️</span>
+            <h3 className="text-sm font-semibold text-slate-100">
+              Recent Evaluations
+            </h3>
           </div>
+          <Link
+            to="/evaluations"
+            className="text-xs font-medium text-lime-300 hover:text-lime-200"
+          >
+            View all →
+          </Link>
+        </div>
+
+        {recentEvals.length === 0 ? (
+          <p className="text-xs text-slate-500">
+            No evaluations yet. Create your first evaluation to see it here.
+          </p>
         ) : (
           <div className="space-y-2">
             {recentEvals.map(ev => {
+              const student = students.find(s => s.id === ev.studentId);
               const phaseConf = PHASE_CONFIG[ev.phase];
+
               return (
-                <div key={ev.id} className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-100 text-sm">
+                <button
+                  key={ev.id}
+                  type="button"
+                  onClick={() => navigate(`/evaluate/${ev.id}`)}
+                  className="w-full flex items-center justify-between gap-3 px-4 py-2.5 rounded-2xl bg-slate-950/40 border border-slate-800 hover:border-lime-300/60 hover:bg-slate-900 transition-colors text-left"
+                >
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-9 h-9 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold text-xs shrink-0">
+                    <div className="w-8 h-8 rounded-full bg-lime-500/20 flex items-center justify-center text-xs font-bold text-lime-300">
                       W{ev.weekNumber}
                     </div>
                     <div className="min-w-0">
-                      <p className="font-semibold text-slate-800 truncate">{getStudentName(ev.studentId)}</p>
-                      <p className="text-xs text-slate-400">{ev.date}</p>
+                      <p className="text-sm font-medium text-slate-100 truncate">
+                        {student?.name || 'Unknown student'}
+                      </p>
+                      <p className="text-[11px] text-slate-500">
+                        {ev.date}
+                      </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${phaseConf.bgColor} ${phaseConf.color}`}>
+                    <span
+                      className={`text-[11px] px-2.5 py-1 rounded-full font-medium ${phaseConf.bgColor} ${phaseConf.color} border ${phaseConf.borderColor}`}
+                    >
                       {phaseConf.label}
                     </span>
-                    <span className={`font-bold ${ev.overallRating >= 4 ? 'text-emerald-600' : ev.overallRating >= 3 ? 'text-yellow-600' : 'text-red-600'}`}>
+                    <span
+                      className={`text-sm font-bold ${
+                        ev.overallRating >= 4
+                          ? 'text-emerald-300'
+                          : ev.overallRating >= 3
+                          ? 'text-amber-300'
+                          : 'text-rose-300'
+                      }`}
+                    >
                       {ev.overallRating}/5
                     </span>
                   </div>
-                </div>
+                </button>
               );
             })}
           </div>
@@ -151,4 +182,5 @@ export function Dashboard() {
       )}
     </div>
   );
+
 }
