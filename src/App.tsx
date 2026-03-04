@@ -9,6 +9,7 @@ import { EvaluationsList } from "./pages/EvaluationsList";
 import { ProgressView } from "./pages/ProgressView";
 import { Settings } from "./pages/Settings";
 import { ThemeProvider } from "./theme";
+import { EvaluationCalendar } from "./pages/EvaluationCalendar"; // NEW
 
 /**
  * EduTrack Pro - Medical Preceptor Evaluation Tracker
@@ -28,6 +29,7 @@ export function App() {
               <Route path="/evaluations" element={<EvaluationsList />} />
               <Route path="/evaluations/:id" element={<EvaluateSession />} />
               <Route path="/progress" element={<ProgressView />} />
+              <Route path="/calendar" element={<EvaluationCalendar />} /> {/* NEW */}
               <Route path="/settings" element={<Settings />} />
               {/* Fallback route */}
               <Route path="*" element={<Dashboard />} />
