@@ -17,6 +17,7 @@ import {
   RED_FLAG_COMPETENCIES,
   RedFlagPlan,
   RedFlagStatus,
+  RED_FLAG_DETAILS,   // ← add this
 } from '../types';
 import { ScoreInput } from '../components/ScoreInput';
 
