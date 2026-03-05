@@ -9,16 +9,20 @@
 :root {
   /* light */
   color-scheme: light;
-  --bg: #f5f7fb;
-  --panel: rgba(255, 255, 255, 0.92);
-  --panel-2: rgba(255, 255, 255, 0.78);
-  --border: rgba(15, 23, 42, 0.10);
+  --bg: #eef0f7;
+  --panel: #ffffff;
+  --panel-2: #f6f7fb;
+  --border: rgba(0, 0, 0, 0.07);
   --text: #0b1220;
-  --muted: rgba(15, 23, 42, 0.60);
+  --muted: #8a94a6;
 
   /* accent */
-  --accent: #4f46e5;
-  --accent-soft: rgba(79, 70, 229, 0.12);
+  --accent: #4361ee;
+  --accent-soft: rgba(67, 97, 238, 0.10);
+
+  /* sidebar / header */
+  --sidebar-bg: #ffffff;
+  --header-bg: #ffffff;
 
   /* neon palette (available in light too) */
   --neon-pink: #ff2d78;
@@ -50,6 +54,10 @@ html[data-theme="dark"] {
   --accent: #ff2d78;
   --accent-soft: rgba(255, 45, 120, 0.15);
 
+  /* sidebar / header */
+  --sidebar-bg: #0d0d1a;
+  --header-bg: rgba(13, 13, 26, 0.95);
+
   /* neon palette */
   --neon-pink: #ff2d78;
   --neon-purple: #7c3aed;
@@ -71,16 +79,28 @@ body {
 }
 
 body {
+  background: linear-gradient(135deg, #e8eaf6 0%, #f0f2f8 40%, #e8f4f8 100%);
+  color: var(--text);
+}
+
+html[data-theme="dark"] body {
   background:
     radial-gradient(ellipse 800px 600px at 10% 5%, rgba(255, 45, 120, 0.06), transparent 60%),
     radial-gradient(ellipse 600px 500px at 90% 15%, rgba(124, 58, 237, 0.05), transparent 55%),
     radial-gradient(ellipse 700px 400px at 50% 90%, rgba(0, 212, 255, 0.04), transparent 60%),
     var(--bg);
-  color: var(--text);
 }
 
 a {
   color: inherit;
+}
+
+/* Floating card shell for desktop layout */
+.app-shell {
+  background: var(--bg);
+  border-radius: 20px;
+  box-shadow: 0 8px 48px rgba(0, 0, 0, 0.10);
+  overflow: hidden;
 }
 
 ::selection {
