@@ -52,7 +52,9 @@ export function Settings() {
     if (!file) return;
     try {
       const dataUrl = await resizeImageToDataUrl(file, 128);
-      setProfile(prev => ({ ...prev, avatarDataUrl: dataUrl }));
+      const updated = { ...profile, avatarDataUrl: dataUrl };
+      setProfile(updated);
+      updatePreceptor(updated);
     } catch {
       setSaveStatus('Failed to process the image. Please try another file.');
       setTimeout(() => setSaveStatus(''), 3000);
@@ -62,7 +64,9 @@ export function Settings() {
   };
 
   const handleRemoveAvatar = () => {
-    setProfile(prev => ({ ...prev, avatarDataUrl: undefined }));
+    const updated = { ...profile, avatarDataUrl: undefined };
+    setProfile(updated);
+    updatePreceptor(updated);
   };
 
   const handleSaveProfile = () => {
