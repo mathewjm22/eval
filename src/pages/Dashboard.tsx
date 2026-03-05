@@ -1,8 +1,11 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAppData } from '../context';
 import { useTheme } from '../theme';
 import { PHASE_CONFIG, SCORE_CATEGORIES, SessionEvaluation } from '../types';
+import { CompetencyRadar } from '../components/charts/CompetencyRadar';
+import { OverallLine } from '../components/charts/OverallLine';
+import { ConditionHeatmap } from '../components/charts/ConditionHeatmap';
 
 export function Dashboard() {
   const { data } = useAppData();
@@ -47,6 +50,8 @@ export function Dashboard() {
       avg: (evaluations.reduce((s, ev) => s + (ev.scores[cat.key] ?? 0), 0) / evaluations.length).toFixed(1),
     }));
   }, [evaluations]);
+
+  const [selectedStudentId, setSelectedStudentId] = useState<string | undefined>(undefined);
 
   const completedCount = evaluations.length;
   const studentCount = students.length;
@@ -444,6 +449,51 @@ export function Dashboard() {
           >
             Edit Profile
           </Link>
+        </div>
+      </div>
+
+      {/* Analytics section */}
+      <div>
+        <div className="flex items-center gap-3 mb-4">
+          <label
+            className="text-sm font-medium"
+            style={{ color: isDark ? 'rgba(255,255,255,0.7)' : '#475569' }}
+          >
+            View:
+          </label>
+          <select
+            value={selectedStudentId ?? ''}
+            onChange={e => setSelectedStudentId(e.target.value || undefined)}
+            className="px-3 py-1.5 rounded-xl border text-sm"
+            style={isDark ? {
+              background: 'rgba(18,18,31,0.85)',
+              border: '1px solid rgba(255,255,255,0.12)',
+              color: 'rgba(255,255,255,0.85)',
+            } : {
+              background: '#ffffff',
+              border: '1px solid #e2e8f0',
+              color: '#0f172a',
+            }}
+          >
+            <option value="">Cohort (all students)</option>
+            {students.map(s => (
+              <option key={s.id} value={s.id}>{s.name}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <CompetencyRadar evaluations={evaluations} studentId={selectedStudentId} />
+          <OverallLine
+            evaluations={evaluations}
+            studentId={selectedStudentId}
+            onPointClick={id => navigate(`/evaluations/${id}`)}
+          />
+          <ConditionHeatmap
+            evaluations={evaluations}
+            field="teachingTopics"
+            studentId={selectedStudentId}
+          />
         </div>
       </div>
     </div>
