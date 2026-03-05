@@ -356,6 +356,38 @@ export const TEACHING_TOPIC_CATEGORIES: { category: string; topics: string[] }[]
     topics: ['ECG Interpretation', 'Heart Failure Management', 'Hypertension Guidelines', 'Anticoagulation', 'Lipid Management'],
   },
   {
+    category: 'Respiratory',
+    topics: ['Asthma Management', 'COPD', 'Pulmonary Embolism', 'Spirometry Interpretation', 'Oxygen Therapy', 'Pleural Effusion'],
+  },
+  {
+    category: 'Gastrointestinal',
+    topics: ['GERD / PUD', 'Liver Disease', 'IBD vs IBS', 'GI Bleeding', 'Nutrition & Bowel Health', 'Colorectal Cancer Screening'],
+  },
+  {
+    category: 'Endocrine / Metabolic',
+    topics: ['Diabetes Management', 'Thyroid Disorders', 'Obesity Management', 'Metabolic Syndrome', 'Adrenal Disorders', 'Calcium & Electrolyte Disorders'],
+  },
+  {
+    category: 'Musculoskeletal',
+    topics: ['Osteoarthritis', 'Rheumatoid Arthritis', 'Back Pain', 'Fracture Management', 'Gout', 'Osteoporosis'],
+  },
+  {
+    category: 'Neurological',
+    topics: ['Headache / Migraine', 'Stroke Recognition', 'Seizure Management', 'Dementia', 'Parkinson\'s', 'Neuropathy'],
+  },
+  {
+    category: 'Mental Health',
+    topics: ['Depression Screening', 'Anxiety Disorders', 'Substance Use Disorder', 'Suicide Risk Assessment', 'ADHD', 'PTSD'],
+  },
+  {
+    category: 'Infectious Disease',
+    topics: ['Antibiotic Selection', 'Sepsis Recognition', 'HIV Management', 'UTI / Cellulitis', 'Vaccination', 'Antibiotic Stewardship'],
+  },
+  {
+    category: 'Preventive / Screening',
+    topics: ['Cancer Screening Guidelines', 'Immunization Schedules', 'Chronic Disease Prevention', 'Well Visit Approach', 'STI Screening', 'Prenatal Care'],
+  },
+  {
     category: 'Pharmacology',
     topics: ['Polypharmacy Review', 'Drug Interactions', 'Antibiotic Stewardship', 'Pain Management', 'Insulin Dosing'],
   },
