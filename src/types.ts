@@ -13,6 +13,8 @@ export interface PreceptorProfile {
   institution: string;
   specialty: string;
   email: string;
+  /** Base64 data URL of the user's avatar photo (optional). Stored in AppData and synced via export/import/Drive. */
+  avatarDataUrl?: string;
 }
 
 export interface StudentProfile {

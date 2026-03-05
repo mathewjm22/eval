@@ -1,5 +1,5 @@
 // src/components/Layout.tsx
-import { ReactNode, useState } from "react";
+import React, { ReactNode, useState } from "react";
 import { Link, NavLink, useLocation } from "react-router-dom";
 import { useAppData } from "../context";
 import { cn } from "../utils/cn";
@@ -61,6 +61,34 @@ function ThemeToggle() {
     >
       <span className="text-sm">{isDark ? "☾" : "☀︎"}</span>
     </button>
+  );
+}
+
+interface AvatarProps {
+  avatarDataUrl?: string;
+  initials: string;
+  size: number;
+  isDark: boolean;
+}
+
+function Avatar({ avatarDataUrl, initials, size, isDark }: AvatarProps) {
+  const sizeClass = `flex-shrink-0 rounded-xl overflow-hidden flex items-center justify-center font-semibold`;
+  const style: React.CSSProperties = {
+    width: size,
+    height: size,
+    fontSize: size <= 28 ? 11 : 13,
+    background: avatarDataUrl ? undefined : isDark ? "linear-gradient(135deg, #ff2d78, #7c3aed)" : "var(--accent)",
+    color: "#ffffff",
+    boxShadow: !avatarDataUrl && isDark ? "0 2px 8px rgba(255,45,120,0.4)" : undefined,
+  };
+  return (
+    <div className={sizeClass} style={style}>
+      {avatarDataUrl ? (
+        <img src={avatarDataUrl} alt="Avatar" className="w-full h-full object-cover" />
+      ) : (
+        initials
+      )}
+    </div>
   );
 }
 
@@ -188,7 +216,7 @@ export function Layout({ children }: { children: ReactNode }) {
           <aside
             className="flex flex-col w-64 flex-shrink-0 p-4"
             style={{
-              background: isDark ? "var(--sidebar-bg)" : "var(--sidebar-bg)",
+              background: "var(--sidebar-bg)",
               borderRight: `1px solid ${isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.07)"}`,
             }}
           >
@@ -299,16 +327,7 @@ export function Layout({ children }: { children: ReactNode }) {
               className="mt-3 pt-3 border-t flex items-center gap-3 px-1"
               style={{ borderColor: isDark ? "rgba(255,255,255,0.06)" : "var(--border)" }}
             >
-              <div
-                className="h-8 w-8 rounded-2xl text-[11px] font-semibold flex items-center justify-center flex-shrink-0"
-                style={{
-                  background: isDark ? "linear-gradient(135deg, #ff2d78, #7c3aed)" : "var(--accent)",
-                  color: "#ffffff",
-                  boxShadow: isDark ? "0 2px 8px rgba(255,45,120,0.4)" : undefined,
-                }}
-              >
-                {initials}
-              </div>
+              <Avatar avatarDataUrl={preceptor.avatarDataUrl} initials={initials} size={32} isDark={isDark} />
               <div className="min-w-0">
                 <p className="text-xs font-medium truncate" style={{ color: isDark ? "rgba(255,255,255,0.9)" : "var(--text)" }}>
                   {preceptor.name || "Preceptor"}
@@ -326,7 +345,7 @@ export function Layout({ children }: { children: ReactNode }) {
             <header
               className="flex-shrink-0 px-5 py-3 flex items-center gap-3 border-b"
               style={{
-                background: isDark ? "var(--header-bg)" : "var(--header-bg)",
+                background: "var(--header-bg)",
                 borderColor: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.07)",
                 backdropFilter: isDark ? "blur(12px)" : undefined,
               }}
@@ -378,16 +397,7 @@ export function Layout({ children }: { children: ReactNode }) {
                     borderColor: isDark ? "rgba(255,255,255,0.08)" : "var(--border)",
                   }}
                 >
-                  <div
-                    className="h-7 w-7 rounded-xl text-[11px] font-semibold flex items-center justify-center flex-shrink-0"
-                    style={{
-                      background: isDark ? "linear-gradient(135deg, #ff2d78, #7c3aed)" : "var(--accent)",
-                      color: "#ffffff",
-                      boxShadow: isDark ? "0 2px 8px rgba(255,45,120,0.4)" : undefined,
-                    }}
-                  >
-                    {initials}
-                  </div>
+                  <Avatar avatarDataUrl={preceptor.avatarDataUrl} initials={initials} size={28} isDark={isDark} />
                   <div className="hidden sm:block pr-1">
                     <p className="text-[11px] font-medium leading-tight" style={{ color: isDark ? "rgba(255,255,255,0.9)" : "var(--text)" }}>
                       {preceptor.name || "Preceptor"}
