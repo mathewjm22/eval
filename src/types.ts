@@ -389,7 +389,7 @@ export const TEACHING_TOPIC_CATEGORIES: { category: string; topics: string[] }[]
   },
   {
     category: 'Pharmacology',
-    topics: ['Polypharmacy Review', 'Drug Interactions', 'Antibiotic Stewardship', 'Pain Management', 'Insulin Dosing'],
+    topics: ['Polypharmacy Review', 'Drug Interactions', 'Pain Management', 'Insulin Dosing'],
   },
   {
     category: 'Clinical Reasoning',
