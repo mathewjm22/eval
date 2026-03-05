@@ -5,7 +5,7 @@ import { useTheme } from '../theme';
 import { PHASE_CONFIG, SCORE_CATEGORIES, SessionEvaluation } from '../types';
 import { CompetencyRadar } from '../components/charts/CompetencyRadar';
 import { OverallLine } from '../components/charts/OverallLine';
-import { ConditionHeatmap } from '../components/charts/ConditionHeatmap';
+import { TopicCoverageWidget } from '../components/TopicCoverageWidget';
 
 export function Dashboard() {
   const { data } = useAppData();
@@ -489,9 +489,8 @@ export function Dashboard() {
             studentId={selectedStudentId}
             onPointClick={id => navigate(`/evaluations/${id}`)}
           />
-          <ConditionHeatmap
+          <TopicCoverageWidget
             evaluations={evaluations}
-            field="teachingTopics"
             studentId={selectedStudentId}
           />
         </div>
