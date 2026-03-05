@@ -4,6 +4,7 @@ import { useAppData } from '../context';
 import { PHASE_CONFIG, SessionEvaluation } from '../types';
 import { isMidYearWeek, isEndOfYearWeek } from '../benchmarkWindows';
 import { IM_BENCHMARKS } from '../imBenchmarks';
+import { TopicCoverageWidget } from '../components/TopicCoverageWidget';
 
 
 function evalHasRedFlag(ev: SessionEvaluation): boolean {
@@ -196,6 +197,9 @@ export function RotationSummary() {
         evaluations={byPhase.final}
         navigate={navigate}
       />
+
+      {/* Teaching Topics Coverage */}
+      <TopicCoverageWidget evaluations={data.evaluations} studentId={studentId} />
     </div>
   );
 }
