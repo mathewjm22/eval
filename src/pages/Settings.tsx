@@ -1,8 +1,34 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAppData } from '../context';
 import { PreceptorProfile } from '../types';
 import { exportToJSON } from '../store';
 import { downloadAsFile, uploadFromFile } from '../googleDrive';
+
+/** Resize an image file to at most maxSize×maxSize and return a JPEG data URL. */
+function resizeImageToDataUrl(file: File, maxSize = 128): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('Failed to read image file'));
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onerror = () => reject(new Error('Failed to decode image'));
+      img.onload = () => {
+        const scale = Math.min(1, maxSize / Math.max(img.width, img.height));
+        const w = Math.round(img.width * scale);
+        const h = Math.round(img.height * scale);
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) { reject(new Error('Canvas not supported')); return; }
+        ctx.drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', 0.85));
+      };
+      img.src = e.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  });
+}
 
 export function Settings() {
   const { data, updatePreceptor, importData, drive } = useAppData();
@@ -10,6 +36,7 @@ export function Settings() {
   const [profile, setProfile] = useState<PreceptorProfile>({ ...data.preceptor });
   const [profileSaved, setProfileSaved] = useState(false);
   const [saveStatus, setSaveStatus] = useState('');
+  const avatarInputRef = useRef<HTMLInputElement>(null);
 
   // Option A: hide Client ID input entirely if env var exists.
   const envClientId = (import.meta as any).env?.VITE_GOOGLE_CLIENT_ID as string | undefined;
@@ -19,6 +46,24 @@ export function Settings() {
   useEffect(() => {
     setProfile({ ...data.preceptor });
   }, [data.preceptor]);
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const dataUrl = await resizeImageToDataUrl(file, 128);
+      setProfile(prev => ({ ...prev, avatarDataUrl: dataUrl }));
+    } catch {
+      setSaveStatus('Failed to process the image. Please try another file.');
+      setTimeout(() => setSaveStatus(''), 3000);
+    }
+    // Reset input so the same file can be re-selected if needed
+    e.target.value = '';
+  };
+
+  const handleRemoveAvatar = () => {
+    setProfile(prev => ({ ...prev, avatarDataUrl: undefined }));
+  };
 
   const handleSaveProfile = () => {
     updatePreceptor(profile);
@@ -88,6 +133,66 @@ export function Settings() {
       <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
         <h3 className="font-bold text-slate-800 text-lg mb-4">🩺 Preceptor Profile</h3>
         <div className="space-y-4">
+
+          {/* Avatar upload */}
+          <div className="flex items-center gap-4">
+            <button
+              type="button"
+              onClick={() => avatarInputRef.current?.click()}
+              className="relative group flex-shrink-0 w-20 h-20 rounded-2xl overflow-hidden border-2 border-dashed border-slate-200 hover:border-indigo-400 transition-colors focus:outline-none focus:border-indigo-400"
+              title="Click to upload avatar photo"
+            >
+              {profile.avatarDataUrl ? (
+                <img
+                  src={profile.avatarDataUrl}
+                  alt="Avatar"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full flex flex-col items-center justify-center bg-slate-50 text-slate-400 gap-1">
+                  <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                  <span className="text-[10px] font-medium">Photo</span>
+                </div>
+              )}
+              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                    d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+              </div>
+            </button>
+            <input
+              ref={avatarInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleAvatarChange}
+            />
+            <div className="space-y-1.5">
+              <button
+                type="button"
+                onClick={() => avatarInputRef.current?.click()}
+                className="block text-sm font-medium text-indigo-600 hover:text-indigo-700 transition-colors"
+              >
+                {profile.avatarDataUrl ? 'Change photo' : 'Upload photo'}
+              </button>
+              <p className="text-xs text-slate-400">Any image format · Converted to 128×128 JPEG</p>
+              {profile.avatarDataUrl && (
+                <button
+                  type="button"
+                  onClick={handleRemoveAvatar}
+                  className="block text-xs text-rose-500 hover:text-rose-600 transition-colors"
+                >
+                  Remove photo
+                </button>
+              )}
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Full Name</label>
