@@ -9,68 +9,84 @@
 :root {
   /* light */
   color-scheme: light;
-  --bg: #f0f2f8;
+  --bg: #f5f5f9;
   --panel: #ffffff;
-  --panel-2: #f8f9fc;
-  --border: rgba(0, 0, 0, 0.06);
-  --text: #1a1f36;
-  --muted: #8a94a6;
+  --panel-2: #fafafa;
+  --border: rgba(0, 0, 0, 0.08);
+  --text: #2b2b36;
+  --muted: #8b8e9b;
 
   /* accent */
-  --accent: #4F7EFF;
-  --accent-soft: rgba(79, 126, 255, 0.10);
+  --accent: #7c3aed;
+  --accent-soft: rgba(124, 58, 237, 0.10);
 
   /* sidebar / header */
   --sidebar-bg: #ffffff;
   --header-bg: #ffffff;
 
-  /* neon palette (available in light too) */
+  /* color palette */
+  --chart-blue: #00d4ff;
+  --chart-purple: #7c3aed;
+  --chart-pink: #ff2d78;
+  --chart-orange: #ff9500;
+  --chart-green: #2ed573;
+
   --neon-pink: #ff2d78;
   --neon-purple: #7c3aed;
-  --neon-orange: #ff6b35;
+  --neon-orange: #ff9500;
   --neon-cyan: #00d4ff;
   --neon-green: #2ed573;
   --neon-yellow: #c8ff00;
+
   --gradient-primary: linear-gradient(135deg, #ff2d78, #7c3aed);
-  --gradient-warm: linear-gradient(135deg, #ff6b35, #ff9500);
+  --gradient-warm: linear-gradient(135deg, #ff9500, #ff2d78);
   --gradient-cool: linear-gradient(135deg, #00d4ff, #7c3aed);
-  --card-glow-pink: 0 8px 32px rgba(255, 45, 120, 0.2);
-  --card-glow-purple: 0 8px 32px rgba(124, 58, 237, 0.2);
-  --card-glow-orange: 0 8px 32px rgba(255, 107, 53, 0.2);
+
+  --card-glow-pink: 0 8px 32px rgba(255, 45, 120, 0.1);
+  --card-glow-purple: 0 8px 32px rgba(124, 58, 237, 0.1);
+  --card-glow-orange: 0 8px 32px rgba(255, 149, 0, 0.1);
 }
 
 html[data-theme="dark"] {
   color-scheme: dark;
 
-  /* neon dark */
-  --bg: #0a0a0f;
-  --panel: rgba(18, 18, 31, 0.95);
-  --panel-2: rgba(26, 26, 46, 0.85);
-  --border: rgba(255, 255, 255, 0.08);
-  --text: #ffffff;
-  --muted: rgba(255, 255, 255, 0.55);
+  /* dark */
+  --bg: #1f2032;
+  --panel: #27283c;
+  --panel-2: #2a2b40;
+  --border: rgba(255, 255, 255, 0.06);
+  --text: #e2e4eb;
+  --muted: rgba(255, 255, 255, 0.5);
 
-  /* neon accent = hot pink */
-  --accent: #ff2d78;
-  --accent-soft: rgba(255, 45, 120, 0.15);
+  /* accent */
+  --accent: #00d4ff;
+  --accent-soft: rgba(0, 212, 255, 0.15);
 
   /* sidebar / header */
-  --sidebar-bg: #0d0d1a;
-  --header-bg: rgba(13, 13, 26, 0.95);
+  --sidebar-bg: #27283c;
+  --header-bg: #27283c;
 
-  /* neon palette */
+  /* color palette */
+  --chart-blue: #00d4ff;
+  --chart-purple: #7c3aed;
+  --chart-pink: #ff2d78;
+  --chart-orange: #ff9500;
+  --chart-green: #2ed573;
+
   --neon-pink: #ff2d78;
   --neon-purple: #7c3aed;
-  --neon-orange: #ff6b35;
+  --neon-orange: #ff9500;
   --neon-cyan: #00d4ff;
   --neon-green: #2ed573;
   --neon-yellow: #c8ff00;
+
   --gradient-primary: linear-gradient(135deg, #ff2d78, #7c3aed);
-  --gradient-warm: linear-gradient(135deg, #ff6b35, #ff9500);
+  --gradient-warm: linear-gradient(135deg, #ff9500, #ff2d78);
   --gradient-cool: linear-gradient(135deg, #00d4ff, #7c3aed);
-  --card-glow-pink: 0 8px 32px rgba(255, 45, 120, 0.2);
-  --card-glow-purple: 0 8px 32px rgba(124, 58, 237, 0.2);
-  --card-glow-orange: 0 8px 32px rgba(255, 107, 53, 0.2);
+
+  --card-glow-pink: 0 8px 32px rgba(255, 45, 120, 0.15);
+  --card-glow-purple: 0 8px 32px rgba(124, 58, 237, 0.15);
+  --card-glow-orange: 0 8px 32px rgba(255, 149, 0, 0.15);
 }
 
 html,
@@ -81,14 +97,11 @@ body {
 body {
   background: var(--bg);
   color: var(--text);
+  background-image: linear-gradient(to right, var(--bg), var(--bg));
 }
 
 html[data-theme="dark"] body {
-  background:
-    radial-gradient(ellipse 800px 600px at 10% 5%, rgba(255, 45, 120, 0.06), transparent 60%),
-    radial-gradient(ellipse 600px 500px at 90% 15%, rgba(124, 58, 237, 0.05), transparent 55%),
-    radial-gradient(ellipse 700px 400px at 50% 90%, rgba(0, 212, 255, 0.04), transparent 60%),
-    var(--bg);
+  background: var(--bg);
 }
 
 a {

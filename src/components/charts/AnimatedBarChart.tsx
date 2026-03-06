@@ -36,8 +36,6 @@ interface AnimatedBarChartProps {
   layout?: 'horizontal' | 'vertical';
 }
 
-const DEFAULT_COLORS = CHART_COLORS;
-
 export function AnimatedBarChart({
   data,
   bars,
@@ -64,33 +62,50 @@ export function AnimatedBarChart({
       className="rounded-2xl border p-4 shadow-sm"
       style={
         isDark
-          ? { background: 'rgba(18,18,31,0.85)', border: '1px solid rgba(255,255,255,0.07)' }
-          : { background: '#ffffff', border: '1px solid #e2e8f0' }
+          ? { background: 'var(--panel)', border: '1px solid var(--border)' }
+          : { background: 'var(--panel)', border: '1px solid var(--border)' }
       }
     >
       {title && (
         <h4
           className="text-sm font-semibold mb-2"
-          style={{ color: isDark ? 'rgba(255,255,255,0.9)' : '#0f172a' }}
+          style={{ color: isDark ? 'rgba(255,255,255,0.9)' : '#2b2b36' }}
         >
           {title}
         </h4>
       )}
       <ResponsiveContainer width="100%" height={height}>
         <BarChart data={data} layout={layout}>
-          <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
+          <defs>
+            {bars.map((bar, barIdx) => {
+              const color = bar.color ?? CHART_COLORS[barIdx % CHART_COLORS.length];
+              return (
+                <linearGradient key={`bar-gradient-${bar.dataKey}`} id={`bar-gradient-${bar.dataKey}`} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={color} stopOpacity={1} />
+                  <stop offset="100%" stopColor={color} stopOpacity={0.6} />
+                </linearGradient>
+              );
+            })}
+            {bars.flatMap((bar) => bar.cellColors ? bar.cellColors.map((color, cIdx) => (
+              <linearGradient key={`bar-cell-gradient-${bar.dataKey}-${cIdx}`} id={`bar-cell-gradient-${bar.dataKey}-${cIdx}`} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={color} stopOpacity={1} />
+                <stop offset="100%" stopColor={color} stopOpacity={0.6} />
+              </linearGradient>
+            )) : [])}
+          </defs>
+          <CartesianGrid strokeDasharray="3 3" stroke={gridColor} vertical={false} />
           {layout === 'horizontal' ? (
             <>
-              <XAxis dataKey={xDataKey} tick={tickStyle} />
-              <YAxis domain={yDomain} tick={tickStyle} />
+              <XAxis dataKey={xDataKey} tick={tickStyle} axisLine={false} tickLine={false} />
+              <YAxis domain={yDomain} tick={tickStyle} axisLine={false} tickLine={false} />
             </>
           ) : (
             <>
-              <XAxis type="number" domain={yDomain} tick={tickStyle} />
-              <YAxis type="category" dataKey={xDataKey} tick={tickStyle} width={80} />
+              <XAxis type="number" domain={yDomain} tick={tickStyle} axisLine={false} tickLine={false} />
+              <YAxis type="category" dataKey={xDataKey} tick={tickStyle} width={80} axisLine={false} tickLine={false} />
             </>
           )}
-          <Tooltip contentStyle={tooltipStyle} />
+          <Tooltip contentStyle={tooltipStyle} cursor={{ fill: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)' }} />
           {bars.length > 1 && (
             <Legend wrapperStyle={{ fontSize: 11, color: isDark ? 'rgba(255,255,255,0.7)' : undefined }} />
           )}
@@ -99,17 +114,18 @@ export function AnimatedBarChart({
               key={bar.dataKey}
               dataKey={bar.dataKey}
               name={bar.name ?? bar.dataKey}
-              fill={bar.color ?? DEFAULT_COLORS[barIdx % DEFAULT_COLORS.length]}
-              radius={[4, 4, 0, 0]}
+              fill={`url(#bar-gradient-${bar.dataKey})`}
+              radius={layout === 'horizontal' ? [4, 4, 0, 0] : [0, 4, 4, 0]}
               isAnimationActive
               animationDuration={800}
               animationEasing="ease-out"
+              barSize={layout === 'horizontal' ? 16 : 12}
             >
               {bar.cellColors &&
                 data.map((_entry, index) => (
                   <Cell
                     key={`cell-${index}`}
-                    fill={bar.cellColors![index % bar.cellColors!.length]}
+                    fill={`url(#bar-cell-gradient-${bar.dataKey}-${index % bar.cellColors!.length})`}
                   />
                 ))}
             </Bar>

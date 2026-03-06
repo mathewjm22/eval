@@ -1,7 +1,8 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import {
-  LineChart,
+  ComposedChart,
+  Area,
   Line,
   XAxis,
   YAxis,
@@ -11,6 +12,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { useTheme } from '../../theme';
+import { CHART_COLORS } from '../../utils/chartConstants';
 
 interface DataPoint {
   [key: string]: string | number;
@@ -62,20 +64,20 @@ export function AnimatedLineChart({
       className="rounded-2xl border p-4 shadow-sm"
       style={
         isDark
-          ? { background: 'rgba(18,18,31,0.85)', border: '1px solid rgba(255,255,255,0.07)' }
-          : { background: '#ffffff', border: '1px solid #e2e8f0' }
+          ? { background: 'var(--panel)', border: '1px solid var(--border)' }
+          : { background: 'var(--panel)', border: '1px solid var(--border)' }
       }
     >
       {title && (
         <h4
           className="text-sm font-semibold mb-2"
-          style={{ color: isDark ? 'rgba(255,255,255,0.9)' : '#0f172a' }}
+          style={{ color: isDark ? 'rgba(255,255,255,0.9)' : '#2b2b36' }}
         >
           {title}
         </h4>
       )}
       <ResponsiveContainer width="100%" height={height}>
-        <LineChart
+        <ComposedChart
           data={data}
           style={{ cursor: onPointClick ? 'pointer' : 'default' }}
           onClick={(state) => {
@@ -84,31 +86,64 @@ export function AnimatedLineChart({
             }
           }}
         >
-          <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
-          <XAxis dataKey={xDataKey} tick={tickStyle} />
+          <defs>
+            {lines.map((line, idx) => {
+              const color = line.color ?? CHART_COLORS[idx % CHART_COLORS.length];
+              return (
+                <linearGradient key={`gradient-${line.dataKey}`} id={`gradient-${line.dataKey}`} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor={color} stopOpacity={0.6}/>
+                  <stop offset="95%" stopColor={color} stopOpacity={0}/>
+                </linearGradient>
+              );
+            })}
+          </defs>
+          <CartesianGrid strokeDasharray="3 3" stroke={gridColor} vertical={false} />
+          <XAxis dataKey={xDataKey} tick={tickStyle} axisLine={false} tickLine={false} />
           <YAxis
             domain={yDomain}
             ticks={yTicks}
             tick={tickStyle}
+            axisLine={false}
+            tickLine={false}
           />
           <Tooltip contentStyle={tooltipStyle} />
           <Legend wrapperStyle={{ fontSize: 11, color: isDark ? 'rgba(255,255,255,0.7)' : undefined }} />
-          {lines.map((line) => (
-            <Line
-              key={line.dataKey}
-              type="monotone"
-              dataKey={line.dataKey}
-              name={line.name ?? line.dataKey}
-              stroke={line.color ?? '#10b981'}
-              strokeDasharray={line.strokeDasharray}
-              dot={line.dot !== false ? { r: 4 } : false}
-              activeDot={{ r: 6 }}
-              isAnimationActive
-              animationDuration={900}
-              animationEasing="ease-out"
-            />
-          ))}
-        </LineChart>
+          {lines.map((line, idx) => {
+            const color = line.color ?? CHART_COLORS[idx % CHART_COLORS.length];
+            return line.strokeDasharray ? (
+              <Line
+                key={line.dataKey}
+                type="monotone"
+                dataKey={line.dataKey}
+                name={line.name ?? line.dataKey}
+                stroke={color}
+                strokeWidth={2}
+                strokeDasharray={line.strokeDasharray}
+                dot={line.dot !== false ? { r: 4, strokeWidth: 2, fill: isDark ? '#1f2032' : '#ffffff' } : false}
+                activeDot={{ r: 6, strokeWidth: 0 }}
+                isAnimationActive
+                animationDuration={900}
+                animationEasing="ease-out"
+              />
+            ) : (
+              <Area
+                key={line.dataKey}
+                type="monotone"
+                dataKey={line.dataKey}
+                name={line.name ?? line.dataKey}
+                stroke={color}
+                strokeWidth={3}
+                fillOpacity={1}
+                fill={`url(#gradient-${line.dataKey})`}
+                dot={line.dot !== false ? { r: 4, strokeWidth: 2, fill: isDark ? '#1f2032' : '#ffffff' } : false}
+                activeDot={{ r: 6, strokeWidth: 0 }}
+                isAnimationActive
+                animationDuration={900}
+                animationEasing="ease-out"
+              />
+            );
+          })}
+        </ComposedChart>
       </ResponsiveContainer>
     </motion.div>
   );

@@ -1,13 +1,13 @@
 /** Shared color palette used across all animated chart components. */
 export const CHART_COLORS = [
-  '#7c3aed',
-  '#00d4ff',
-  '#2ed573',
-  '#ff2d78',
-  '#ff9500',
-  '#10b981',
-  '#f59e0b',
-  '#06b6d4',
+  '#00d4ff', // cyan
+  '#7c3aed', // purple
+  '#ff2d78', // pink
+  '#ff9500', // orange
+  '#2ed573', // green
+  '#10b981', // emerald
+  '#f59e0b', // amber
+  '#06b6d4', // light blue
 ] as const;
 
 /** Maximum number of characters for chart axis labels before truncation. */
