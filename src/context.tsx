@@ -81,14 +81,77 @@ function cacheData(data: AppData) {
   }
 }
 
-function mergeIntoAppData(input: unknown): AppData {
+function mergeIntoAppData(input: unknown, currentData: AppData): AppData {
   const parsed = (input ?? {}) as Partial<AppData>;
+  const remotePreceptor = { ...DEFAULT_DATA.preceptor, ...(parsed.preceptor || {}) };
+  const remoteStudents = Array.isArray(parsed.students) ? parsed.students : [];
+  const remoteEvaluations = Array.isArray(parsed.evaluations) ? parsed.evaluations : [];
+
+  // Merge Preceptor
+  const isLocalPreceptorBlank =
+    !currentData.preceptor.name &&
+    !currentData.preceptor.title &&
+    !currentData.preceptor.institution &&
+    !currentData.preceptor.specialty &&
+    !currentData.preceptor.email;
+
+  const mergedPreceptor = isLocalPreceptorBlank ? remotePreceptor : currentData.preceptor;
+
+  // Merge Students
+  const mergedStudents = [...currentData.students];
+  const idMapping: Record<string, string> = {}; // old remote ID -> new assigned ID
+
+  remoteStudents.forEach((remoteStudent) => {
+    const existingLocal = mergedStudents.find((s) => s.id === remoteStudent.id);
+
+    if (!existingLocal) {
+      // No ID collision, add as new
+      mergedStudents.push(remoteStudent);
+    } else if (existingLocal.name === remoteStudent.name) {
+      // ID collision AND same name: keep local version (already in mergedStudents)
+      // We could also merge fields here, but keeping local is fine per user request
+    } else {
+      // ID collision BUT different name: generate new ID for remote student
+      const newId = crypto.randomUUID();
+      idMapping[remoteStudent.id] = newId;
+      mergedStudents.push({ ...remoteStudent, id: newId });
+    }
+  });
+
+  // Merge Evaluations
+  const mergedEvaluations = [...currentData.evaluations];
+
+  remoteEvaluations.forEach((remoteEval) => {
+    // Update studentId if the remote student was given a new ID
+    const studentIdToUse = idMapping[remoteEval.studentId] || remoteEval.studentId;
+    const mappedEval = { ...remoteEval, studentId: studentIdToUse };
+
+    const existingLocal = mergedEvaluations.find((e) => e.id === mappedEval.id);
+
+    if (!existingLocal) {
+      // No ID collision, add as new
+      mergedEvaluations.push(mappedEval);
+    } else {
+      // ID collision: check if content is exactly the same
+      // Create copies without 'id' to compare content
+      const { id: _idLocal, ...localContent } = existingLocal;
+      const { id: _idRemote, ...remoteContent } = mappedEval;
+
+      if (JSON.stringify(localContent) === JSON.stringify(remoteContent)) {
+        // Content is exactly the same, ignore the duplicate (already in mergedEvaluations)
+      } else {
+        // Content is different, generate new ID for the incoming evaluation
+        mergedEvaluations.push({ ...mappedEval, id: crypto.randomUUID() });
+      }
+    }
+  });
+
   return {
     ...DEFAULT_DATA,
-    ...parsed,
-    preceptor: { ...DEFAULT_DATA.preceptor, ...(parsed.preceptor || {}) },
-    students: Array.isArray(parsed.students) ? parsed.students : [],
-    evaluations: Array.isArray(parsed.evaluations) ? parsed.evaluations : [],
+    ...parsed, // to pick up 'version' or other top-level fields
+    preceptor: mergedPreceptor,
+    students: mergedStudents,
+    evaluations: mergedEvaluations,
   };
 }
 
@@ -140,7 +203,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      const merged = mergeIntoAppData(JSON.parse(json));
+      const merged = mergeIntoAppData(JSON.parse(json), latestDataRef.current);
       setData(merged);
       setLastSyncedAt(new Date().toISOString());
       setDriveMessage('Loaded from Google Drive.');
@@ -235,7 +298,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const importData = useCallback((json: string) => {
     try {
-      const merged = mergeIntoAppData(JSON.parse(json));
+      const merged = mergeIntoAppData(JSON.parse(json), latestDataRef.current);
       setData(merged);
       scheduleDriveSave();
     } catch {
