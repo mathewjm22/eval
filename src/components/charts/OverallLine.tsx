@@ -1,6 +1,7 @@
 import React from 'react';
 import {
-  LineChart,
+  ComposedChart,
+  Area,
   Line,
   XAxis,
   YAxis,
@@ -13,6 +14,7 @@ import type { CategoricalChartFunc } from 'recharts/types/chart/types';
 import { computeOverallSeries } from '../../utils/analytics';
 import { SessionEvaluation } from '../../types';
 import { useTheme } from '../../theme';
+import { CHART_COLORS } from '../../utils/chartConstants';
 
 interface Props {
   evaluations: SessionEvaluation[];
@@ -43,46 +45,58 @@ export function OverallLine({ evaluations, studentId, onPointClick }: Props) {
   const gridColor = isDark ? 'rgba(255,255,255,0.07)' : '#e2e8f0';
   const tickStyle = { fontSize: 10, fill: isDark ? 'rgba(255,255,255,0.5)' : '#94a3b8' };
 
+  const ratingColor = CHART_COLORS[1]; // Purple
+  const avgColor = CHART_COLORS[0]; // Cyan
+
   return (
     <div
       className="rounded-2xl border p-4 shadow-sm"
       style={isDark ? {
-        background: 'rgba(18,18,31,0.85)',
-        border: '1px solid rgba(255,255,255,0.07)',
+        background: 'var(--panel)',
+        border: '1px solid var(--border)',
       } : {
-        background: '#ffffff',
-        border: '1px solid #e2e8f0',
+        background: 'var(--panel)',
+        border: '1px solid var(--border)',
       }}
     >
-      <h4 className="text-sm font-semibold mb-2" style={{ color: isDark ? 'rgba(255,255,255,0.9)' : '#0f172a' }}>
+      <h4 className="text-sm font-semibold mb-2" style={{ color: isDark ? 'rgba(255,255,255,0.9)' : '#2b2b36' }}>
         Overall Rating Over Time
       </h4>
       <ResponsiveContainer width="100%" height={260}>
-        <LineChart data={chartData} onClick={handleClick} style={{ cursor: onPointClick ? 'pointer' : 'default' }}>
-          <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
-          <XAxis dataKey="date" tick={tickStyle} />
-          <YAxis domain={[0, 5]} ticks={[0, 1, 2, 3, 4, 5]} tick={tickStyle} />
+        <ComposedChart data={chartData} onClick={handleClick} style={{ cursor: onPointClick ? 'pointer' : 'default' }}>
+          <defs>
+            <linearGradient id="colorRating" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor={ratingColor} stopOpacity={0.6}/>
+              <stop offset="95%" stopColor={ratingColor} stopOpacity={0}/>
+            </linearGradient>
+          </defs>
+          <CartesianGrid strokeDasharray="3 3" stroke={gridColor} vertical={false} />
+          <XAxis dataKey="date" tick={tickStyle} axisLine={false} tickLine={false} />
+          <YAxis domain={[0, 5]} ticks={[0, 1, 2, 3, 4, 5]} tick={tickStyle} axisLine={false} tickLine={false} />
           <Tooltip
             contentStyle={isDark ? { background: 'rgba(18,18,31,0.95)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.85)' } : undefined}
           />
           <Legend wrapperStyle={{ fontSize: 11, color: isDark ? 'rgba(255,255,255,0.7)' : undefined }} />
-          <Line
+          <Area
             type="monotone"
             dataKey="rating"
             name="Overall rating"
-            stroke="#10b981"
-            dot={{ r: 4 }}
-            activeDot={{ r: 6 }}
+            stroke={ratingColor}
+            strokeWidth={3}
+            fillOpacity={1}
+            fill="url(#colorRating)"
+            dot={{ r: 4, strokeWidth: 2, fill: isDark ? '#1f2032' : '#ffffff' }}
+            activeDot={{ r: 6, strokeWidth: 0 }}
           />
           <Line
             type="monotone"
             dataKey="movingAvg"
             name="Moving avg (3)"
-            stroke="#06b6d4"
+            stroke={avgColor}
             strokeDasharray="6 4"
             dot={false}
           />
-        </LineChart>
+        </ComposedChart>
       </ResponsiveContainer>
     </div>
   );

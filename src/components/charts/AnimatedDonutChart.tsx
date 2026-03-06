@@ -26,8 +26,6 @@ interface AnimatedDonutChartProps {
   showLegend?: boolean;
 }
 
-const DEFAULT_COLORS = CHART_COLORS;
-
 export function AnimatedDonutChart({
   data,
   height = 260,
@@ -54,14 +52,14 @@ export function AnimatedDonutChart({
       className="rounded-2xl border p-4 shadow-sm"
       style={
         isDark
-          ? { background: 'rgba(18,18,31,0.85)', border: '1px solid rgba(255,255,255,0.07)' }
-          : { background: '#ffffff', border: '1px solid #e2e8f0' }
+          ? { background: 'var(--panel)', border: '1px solid var(--border)' }
+          : { background: 'var(--panel)', border: '1px solid var(--border)' }
       }
     >
       {title && (
         <h4
           className="text-sm font-semibold mb-2"
-          style={{ color: isDark ? 'rgba(255,255,255,0.9)' : '#0f172a' }}
+          style={{ color: isDark ? 'rgba(255,255,255,0.9)' : '#2b2b36' }}
         >
           {title}
         </h4>
@@ -69,6 +67,17 @@ export function AnimatedDonutChart({
       <div style={{ position: 'relative' }}>
         <ResponsiveContainer width="100%" height={height}>
           <PieChart>
+            <defs>
+              {data.map((entry, index) => {
+                const color = entry.color ?? CHART_COLORS[index % CHART_COLORS.length];
+                return (
+                  <linearGradient key={`donut-grad-${index}`} id={`donut-grad-${index}`} x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0%" stopColor={color} stopOpacity={1} />
+                    <stop offset="100%" stopColor={color} stopOpacity={0.65} />
+                  </linearGradient>
+                );
+              })}
+            </defs>
             <Pie
               data={data}
               cx="50%"
@@ -82,12 +91,15 @@ export function AnimatedDonutChart({
               animationEasing="ease-out"
               onMouseEnter={(_, index) => setActiveIndex(index)}
               onMouseLeave={() => setActiveIndex(null)}
+              stroke="none"
+              paddingAngle={2}
+              cornerRadius={4}
             >
               {data.map((entry, index) => (
                 <Cell
                   key={`cell-${index}`}
-                  fill={entry.color ?? DEFAULT_COLORS[index % DEFAULT_COLORS.length]}
-                  opacity={activeIndex === null || activeIndex === index ? 1 : 0.55}
+                  fill={`url(#donut-grad-${index})`}
+                  opacity={activeIndex === null || activeIndex === index ? 1 : 0.4}
                   stroke="none"
                 />
               ))}
@@ -121,7 +133,7 @@ export function AnimatedDonutChart({
               style={{
                 fontSize: '1.35rem',
                 fontWeight: 700,
-                color: isDark ? 'rgba(255,255,255,0.9)' : '#0f172a',
+                color: isDark ? 'rgba(255,255,255,0.9)' : '#2b2b36',
                 lineHeight: 1,
               }}
             >
@@ -131,7 +143,7 @@ export function AnimatedDonutChart({
               style={{
                 fontSize: '0.65rem',
                 marginTop: 2,
-                color: isDark ? 'rgba(255,255,255,0.45)' : '#94a3b8',
+                color: isDark ? 'rgba(255,255,255,0.45)' : '#8b8e9b',
               }}
             >
               {activeIndex !== null ? data[activeIndex]?.name : 'total'}
