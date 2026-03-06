@@ -2,8 +2,8 @@ import { useState, useMemo } from 'react';
 import { useAppData } from '../context';
 import { useTheme } from '../theme';
 import { PHASE_CONFIG, Phase, SCORE_CATEGORIES, SCORE_LABELS, PREPOPULATED_CONDITIONS, TEACHING_TOPIC_CATEGORIES, CLINICAL_OBJECTIVES, CLINICAL_OBJECTIVES_V2, expectationId, TOTAL_OBJECTIVE_EXPECTATIONS, CLINICAL_SKILLS, ClinicalSkillRating } from '../types';
-// Import Recharts components
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { AnimatedLineChart } from '../components/charts/AnimatedLineChart';
+import { AnimatedHeatmap } from '../components/charts/AnimatedHeatmap';
 
 export function ProgressView() {
   const { data, updateStudent } = useAppData();
@@ -59,6 +59,17 @@ export function ProgressView() {
         'Overall Rating': ev.overallRating,
       };
     });
+  }, [studentEvals]);
+
+  // Heatmap data: rows = score categories, columns = session weeks
+  const scoreHeatmapData = useMemo(() => {
+    return studentEvals.flatMap(ev =>
+      SCORE_CATEGORIES.map(cat => ({
+        x: `W${ev.weekNumber}`,
+        y: cat.label.length > 12 ? cat.label.slice(0, 12) + '…' : cat.label,
+        value: ev.scores[cat.key] ?? 0,
+      }))
+    );
   }, [studentEvals]);
 
   // Conditions tracking for selected student
@@ -208,89 +219,62 @@ export function ProgressView() {
 
       {/* Performance Trend Chart */}
       {studentEvals.length > 0 && (
-        <div
-          className="rounded-2xl p-6 relative overflow-hidden"
-          style={isDark ? {
-            background: 'rgba(18,18,31,0.85)',
-            border: '1px solid rgba(255,255,255,0.07)',
-            boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
-          } : {
-            background: '#ffffff',
-            border: '1px solid #e2e8f0',
-          }}
-        >
-          {isDark && (
-            <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: 'linear-gradient(90deg, #ff2d78, #7c3aed)' }} />
-          )}
-          <h3
-            className="font-bold text-lg mb-4"
-            style={{ color: isDark ? 'rgba(255,255,255,0.9)' : '#0f172a' }}
-          >
-            📊 Performance Trend
-          </h3>
+        <>
           {chartData.length > 1 ? (
-            <div className="h-64 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chartData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    stroke={isDark ? 'rgba(255,255,255,0.05)' : '#e2e8f0'}
-                  />
-                  <XAxis
-                    dataKey="name"
-                    tick={{ fill: isDark ? 'rgba(255,255,255,0.5)' : '#64748b', fontSize: 12 }}
-                    stroke={isDark ? 'rgba(255,255,255,0.1)' : '#cbd5e1'}
-                  />
-                  <YAxis
-                    domain={[1, 5]}
-                    tick={{ fill: isDark ? 'rgba(255,255,255,0.5)' : '#64748b', fontSize: 12 }}
-                    stroke={isDark ? 'rgba(255,255,255,0.1)' : '#cbd5e1'}
-                  />
-                  <Tooltip
-                    contentStyle={isDark ? {
-                      background: 'rgba(18,18,31,0.95)',
-                      border: '1px solid rgba(255,45,120,0.3)',
-                      borderRadius: '0.75rem',
-                      color: '#ffffff',
-                    } : {
-                      background: '#fff',
-                      border: '1px solid #e2e8f0',
-                      borderRadius: '0.75rem',
-                    }}
-                    itemStyle={{ color: isDark ? '#ffffff' : '#334155' }}
-                  />
-                  <Legend
-                    wrapperStyle={{ color: isDark ? 'rgba(255,255,255,0.6)' : undefined }}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="Average Score"
-                    stroke={isDark ? '#ff2d78' : '#6366f1'}
-                    strokeWidth={2.5}
-                    dot={{ r: 4, fill: isDark ? '#ff2d78' : '#6366f1' }}
-                    activeDot={{ r: 6 }}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="Overall Rating"
-                    stroke={isDark ? '#00d4ff' : '#10b981'}
-                    strokeWidth={2.5}
-                    dot={{ r: 4, fill: isDark ? '#00d4ff' : '#10b981' }}
-                    activeDot={{ r: 6 }}
-                    strokeDasharray="5 5"
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
+            <AnimatedLineChart
+              data={chartData}
+              xDataKey="name"
+              lines={[
+                { dataKey: 'Average Score', name: 'Average Score', color: isDark ? '#ff2d78' : '#6366f1' },
+                { dataKey: 'Overall Rating', name: 'Overall Rating', color: isDark ? '#00d4ff' : '#10b981', strokeDasharray: '5 5' },
+              ]}
+              yDomain={[1, 5]}
+              yTicks={[1, 2, 3, 4, 5]}
+              height={256}
+              title="📊 Performance Trend"
+            />
           ) : (
-            <p
-              className="text-center text-sm py-8"
-              style={{ color: isDark ? 'rgba(255,255,255,0.35)' : '#94a3b8' }}
+            <div
+              className="rounded-2xl p-6 relative overflow-hidden"
+              style={isDark ? {
+                background: 'rgba(18,18,31,0.85)',
+                border: '1px solid rgba(255,255,255,0.07)',
+              } : {
+                background: '#ffffff',
+                border: '1px solid #e2e8f0',
+              }}
             >
-              Need at least 2 sessions to generate a trend chart.
-            </p>
+              {isDark && (
+                <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: 'linear-gradient(90deg, #ff2d78, #7c3aed)' }} />
+              )}
+              <h3
+                className="font-bold text-lg mb-4"
+                style={{ color: isDark ? 'rgba(255,255,255,0.9)' : '#0f172a' }}
+              >
+                📊 Performance Trend
+              </h3>
+              <p
+                className="text-center text-sm py-8"
+                style={{ color: isDark ? 'rgba(255,255,255,0.35)' : '#94a3b8' }}
+              >
+                Need at least 2 sessions to generate a trend chart.
+              </p>
+            </div>
           )}
-        </div>
+
+          {/* Score Heatmap */}
+          {scoreHeatmapData.length > 0 && (
+            <AnimatedHeatmap
+              data={scoreHeatmapData}
+              title="📋 Score Heatmap by Category & Session"
+              xLabel="Session"
+              yLabel="Category"
+              colorScheme={isDark ? 'purple' : 'blue'}
+              maxValue={5}
+              cellSize={30}
+            />
+          )}
+        </>
       )}
 
       {/* Trend Summary */}
