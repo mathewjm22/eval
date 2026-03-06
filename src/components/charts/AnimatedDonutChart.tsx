@@ -9,6 +9,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { useTheme } from '../../theme';
+import { CHART_COLORS } from '../../utils/chartConstants';
 
 interface DonutDataPoint {
   name: string;
@@ -25,7 +26,7 @@ interface AnimatedDonutChartProps {
   showLegend?: boolean;
 }
 
-const DEFAULT_COLORS = ['#7c3aed', '#00d4ff', '#2ed573', '#ff2d78', '#ff9500', '#10b981', '#f59e0b', '#06b6d4'];
+const DEFAULT_COLORS = CHART_COLORS;
 
 export function AnimatedDonutChart({
   data,

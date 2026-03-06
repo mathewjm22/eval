@@ -12,6 +12,7 @@ import {
   Cell,
 } from 'recharts';
 import { useTheme } from '../../theme';
+import { CHART_COLORS } from '../../utils/chartConstants';
 
 interface BarDataPoint {
   [key: string]: string | number;
@@ -35,7 +36,7 @@ interface AnimatedBarChartProps {
   layout?: 'horizontal' | 'vertical';
 }
 
-const DEFAULT_COLORS = ['#7c3aed', '#00d4ff', '#2ed573', '#ff2d78', '#ff9500', '#10b981'];
+const DEFAULT_COLORS = CHART_COLORS;
 
 export function AnimatedBarChart({
   data,

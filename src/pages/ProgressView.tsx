@@ -4,6 +4,7 @@ import { useTheme } from '../theme';
 import { PHASE_CONFIG, Phase, SCORE_CATEGORIES, SCORE_LABELS, PREPOPULATED_CONDITIONS, TEACHING_TOPIC_CATEGORIES, CLINICAL_OBJECTIVES, CLINICAL_OBJECTIVES_V2, expectationId, TOTAL_OBJECTIVE_EXPECTATIONS, CLINICAL_SKILLS, ClinicalSkillRating } from '../types';
 import { AnimatedLineChart } from '../components/charts/AnimatedLineChart';
 import { AnimatedHeatmap } from '../components/charts/AnimatedHeatmap';
+import { truncateChartLabel } from '../utils/chartConstants';
 
 export function ProgressView() {
   const { data, updateStudent } = useAppData();
@@ -66,7 +67,7 @@ export function ProgressView() {
     return studentEvals.flatMap(ev =>
       SCORE_CATEGORIES.map(cat => ({
         x: `W${ev.weekNumber}`,
-        y: cat.label.length > 12 ? cat.label.slice(0, 12) + '…' : cat.label,
+        y: truncateChartLabel(cat.label),
         value: ev.scores[cat.key] ?? 0,
       }))
     );

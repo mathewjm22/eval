@@ -10,6 +10,7 @@ import { TopicCoverageWidget } from '../components/TopicCoverageWidget';
 import { AnimatedBarChart } from '../components/charts/AnimatedBarChart';
 import { AnimatedDonutChart } from '../components/charts/AnimatedDonutChart';
 import { AnimatedButton } from '../components/AnimatedButton';
+import { truncateChartLabel } from '../utils/chartConstants';
 
 export function Dashboard() {
   const { data } = useAppData();
@@ -59,7 +60,7 @@ export function Dashboard() {
   const categoryBarData = useMemo(() => {
     if (!evaluations.length) return [];
     return SCORE_CATEGORIES.map(cat => ({
-      name: cat.label.length > 14 ? cat.label.slice(0, 14) + '…' : cat.label,
+      name: truncateChartLabel(cat.label),
       Score: parseFloat((evaluations.reduce((s, ev) => s + (ev.scores[cat.key] ?? 0), 0) / evaluations.length).toFixed(2)),
     }));
   }, [evaluations]);

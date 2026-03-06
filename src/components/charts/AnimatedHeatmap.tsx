@@ -2,6 +2,13 @@ import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { useTheme } from '../../theme';
 
+/** Minimum alpha for non-zero cells (visible but subtle). */
+const ALPHA_MIN = 0.15;
+/** Maximum alpha for cells at peak intensity. */
+const ALPHA_MAX = 0.85;
+/** Alpha for empty cells in dark mode. */
+const EMPTY_ALPHA_DARK = 0.04;
+
 interface HeatmapCell {
   /** Column label (e.g. week, month, or x-axis label) */
   x: string;
@@ -26,8 +33,8 @@ interface AnimatedHeatmapProps {
 }
 
 function interpolateColor(ratio: number, scheme: 'green' | 'blue' | 'purple', isDark: boolean): string {
-  if (ratio === 0) return isDark ? 'rgba(255,255,255,0.04)' : '#f3f4f6';
-  const alpha = 0.15 + ratio * 0.85;
+  if (ratio === 0) return isDark ? `rgba(255,255,255,${EMPTY_ALPHA_DARK})` : '#f3f4f6';
+  const alpha = ALPHA_MIN + ratio * ALPHA_MAX;
   switch (scheme) {
     case 'green':
       return isDark
