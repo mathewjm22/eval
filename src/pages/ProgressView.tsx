@@ -5,6 +5,7 @@ import { PHASE_CONFIG, Phase, SCORE_CATEGORIES, SCORE_LABELS, PREPOPULATED_CONDI
 import { AnimatedLineChart } from '../components/charts/AnimatedLineChart';
 import { AnimatedHeatmap } from '../components/charts/AnimatedHeatmap';
 import { truncateChartLabel } from '../utils/chartConstants';
+import { Sparkline } from '../components/charts/Sparkline';
 
 export function ProgressView() {
   const { data, updateStudent } = useAppData();
@@ -30,6 +31,18 @@ export function ProgressView() {
     });
     result['overall'] = evals.reduce((s, e) => s + e.overallRating, 0) / evals.length;
     return result;
+  };
+
+  const phaseTrends = (phase: Phase) => {
+    const evals = phaseEvals(phase);
+    if (evals.length < 2) return null;
+
+    const trends: Record<string, number[]> = {};
+    SCORE_CATEGORIES.forEach(cat => {
+      trends[cat.key] = evals.map(e => e.scores[cat.key] ?? 0);
+    });
+    trends['overall'] = evals.map(e => e.overallRating);
+    return trends;
   };
 
   const student = data.students.find(s => s.id === selectedStudent);
@@ -333,6 +346,9 @@ export function ProgressView() {
                   <div className="space-y-3">
                     {SCORE_CATEGORIES.map(cat => {
                       const avg = avgs![cat.key];
+                      const trends = phaseTrends(phase);
+                      const catTrend = trends ? trends[cat.key] : null;
+
                       return (
                         <div key={cat.key} className="flex items-center gap-3">
                           <div className="w-44 sm:w-52 shrink-0">
@@ -346,7 +362,12 @@ export function ProgressView() {
                               style={{ width: `${(avg / 5) * 100}%` }}
                             />
                           </div>
-                          <span className="text-sm font-bold text-slate-600 w-10 text-right">{avg.toFixed(1)}</span>
+                          <div className="flex items-center gap-2 justify-end min-w-[80px]">
+                            {catTrend && catTrend.length >= 2 && (
+                              <Sparkline data={catTrend} width={36} height={16} strokeWidth={1.5} />
+                            )}
+                            <span className="text-sm font-bold text-slate-600 w-8 text-right">{avg.toFixed(1)}</span>
+                          </div>
                         </div>
                       );
                     })}

@@ -12,6 +12,7 @@ import { AnimatedDonutChart } from '../components/charts/AnimatedDonutChart';
 import { AnimatedButton } from '../components/AnimatedButton';
 import { truncateChartLabel } from '../utils/chartConstants';
 import { RemindersWidget } from '../components/RemindersWidget';
+import { Sparkline } from '../components/charts/Sparkline';
 
 export function Dashboard() {
   const { data } = useAppData();
@@ -49,35 +50,50 @@ export function Dashboard() {
     return set.size;
   }, [evaluations]);
 
+  const [selectedStudentId, setSelectedStudentId] = useState<string | undefined>(undefined);
+
+  // When a student is selected, only consider their evals. Otherwise, use all evals.
+  const filteredEvaluations = useMemo(() => {
+    if (!selectedStudentId) return evaluations;
+    return evaluations.filter(e => e.studentId === selectedStudentId);
+  }, [evaluations, selectedStudentId]);
+
+  const recentEvalsSortedForTrend = useMemo(() => {
+    return [...filteredEvaluations].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()).slice(-10);
+  }, [filteredEvaluations]);
+
+  const overallTrendData = useMemo(() => {
+    return recentEvalsSortedForTrend.map(e => e.overallRating);
+  }, [recentEvalsSortedForTrend]);
+
   const categoryAverages = useMemo(() => {
-    if (!evaluations.length) return null;
+    if (!filteredEvaluations.length) return null;
     return SCORE_CATEGORIES.map(cat => ({
       label: cat.label,
-      avg: (evaluations.reduce((s, ev) => s + (ev.scores[cat.key] ?? 0), 0) / evaluations.length).toFixed(1),
+      avg: (filteredEvaluations.reduce((s, ev) => s + (ev.scores[cat.key] ?? 0), 0) / filteredEvaluations.length).toFixed(1),
+      trendData: recentEvalsSortedForTrend.map(e => e.scores[cat.key] ?? 0),
     }));
-  }, [evaluations]);
+  }, [filteredEvaluations, recentEvalsSortedForTrend]);
 
   // Data for animated bar chart (category averages)
   const categoryBarData = useMemo(() => {
-    if (!evaluations.length) return [];
+    if (!filteredEvaluations.length) return [];
     return SCORE_CATEGORIES.map(cat => ({
       name: truncateChartLabel(cat.label),
-      Score: parseFloat((evaluations.reduce((s, ev) => s + (ev.scores[cat.key] ?? 0), 0) / evaluations.length).toFixed(2)),
+      Score: parseFloat((filteredEvaluations.reduce((s, ev) => s + (ev.scores[cat.key] ?? 0), 0) / filteredEvaluations.length).toFixed(2)),
     }));
-  }, [evaluations]);
+  }, [filteredEvaluations]);
 
   // Data for animated donut chart (phase distribution)
   const phaseDonutData = useMemo(() => {
     const counts: Record<string, number> = { early: 0, middle: 0, final: 0 };
-    evaluations.forEach(ev => { counts[ev.phase] = (counts[ev.phase] ?? 0) + 1; });
+    filteredEvaluations.forEach(ev => { counts[ev.phase] = (counts[ev.phase] ?? 0) + 1; });
     return [
       { name: 'Early', value: counts.early, color: '#7c3aed' },
       { name: 'Middle', value: counts.middle, color: '#00d4ff' },
       { name: 'Final', value: counts.final, color: '#2ed573' },
     ].filter(d => d.value > 0);
-  }, [evaluations]);
-
-  const [selectedStudentId, setSelectedStudentId] = useState<string | undefined>(undefined);
+  }, [filteredEvaluations]);
 
   const completedCount = evaluations.length;
   const studentCount = students.length;
@@ -274,7 +290,12 @@ export function Dashboard() {
               </div>
               {overallAvg ? (
                 <>
-                  <p className="mt-3 text-3xl font-bold" style={{ color: 'var(--text)' }}>{overallAvg}/5</p>
+                  <div className="flex items-center justify-between mt-3 gap-2">
+                    <p className="text-3xl font-bold" style={{ color: 'var(--text)' }}>{overallAvg}/5</p>
+                    <div className="flex-1 flex justify-end">
+                      <Sparkline data={overallTrendData} width={80} height={28} />
+                    </div>
+                  </div>
                   <div className="flex items-center justify-between mt-1">
                     <p className="text-xs" style={{ color: 'var(--muted)' }}>Average across all evaluations</p>
                     <span className="text-[11px] font-semibold" style={{ color: '#22c55e' }}>1–5 scale</span>
