@@ -11,6 +11,7 @@ import { AnimatedBarChart } from '../components/charts/AnimatedBarChart';
 import { AnimatedDonutChart } from '../components/charts/AnimatedDonutChart';
 import { AnimatedButton } from '../components/AnimatedButton';
 import { truncateChartLabel } from '../utils/chartConstants';
+import { RemindersWidget } from '../components/RemindersWidget';
 
 export function Dashboard() {
   const { data } = useAppData();
@@ -561,6 +562,11 @@ export function Dashboard() {
 
       {/* Analytics section */}
       <div>
+        {/* Recommended Focus Areas */}
+        <div className="mb-4">
+          <RemindersWidget studentId={selectedStudentId} />
+        </div>
+
         <div className="flex items-center gap-3 mb-4">
           <label
             className="text-sm font-medium"

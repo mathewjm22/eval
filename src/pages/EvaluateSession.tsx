@@ -21,6 +21,7 @@ import {
 import { ScoreInput } from '../components/ScoreInput';
 import { getBenchmarkWindowForMonth } from '../benchmarkWindows';
 import { IM_BENCHMARKS, BenchmarkPhase } from '../imBenchmarks';
+import { RemindersWidget } from '../components/RemindersWidget';
 
 const STEPS = [
   'Session Details',
@@ -284,6 +285,12 @@ export function EvaluateSession() {
           {existingEval ? 'Update this evaluation' : 'Record a new clinical session evaluation'}
         </p>
       </div>
+
+      {form.studentId && (
+        <div className="mb-6">
+          <RemindersWidget studentId={form.studentId} />
+        </div>
+      )}
 
       {/* Step Indicator */}
       <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
