@@ -102,6 +102,48 @@ export function Dashboard() {
 
   return (
     <div className="space-y-6">
+      {/* Hero banner */}
+      <div
+        className="rounded-2xl p-6 relative overflow-hidden"
+        style={{
+          background: isDark
+            ? 'linear-gradient(135deg, rgba(124,58,237,0.4), rgba(0,212,255,0.2))'
+            : 'linear-gradient(135deg, #6c3fc5 0%, #3b6fd4 50%, #06b0c8 100%)',
+          minHeight: 140,
+        }}
+      >
+        <div className="flex items-center gap-2 mb-3">
+          <span className="px-3 py-1 rounded-full text-xs font-medium" style={{ background: 'rgba(255,255,255,0.18)', color: '#fff' }}>
+            🏥 Welcome back, {preceptor.name?.split(' ')[0] || 'Doctor'}!
+          </span>
+          <span className="px-3 py-1 rounded-full text-xs font-medium" style={{ background: 'rgba(255,255,255,0.18)', color: '#fff' }}>
+            Clinical Educator
+          </span>
+        </div>
+        <h2 className="text-2xl font-bold text-white mb-1">
+          Ready to evaluate your students today?
+        </h2>
+        <p className="text-sm" style={{ color: 'rgba(255,255,255,0.75)' }}>
+          Your evaluation platform is ready. Track progress and guide your learners.
+        </p>
+        <div className="mt-4 flex items-center gap-3">
+          <Link
+            to="/evaluate"
+            className="px-5 py-2 rounded-xl text-sm font-semibold"
+            style={{ background: '#fff', color: '#4F7EFF' }}
+          >
+            + New Evaluation →
+          </Link>
+          <Link
+            to="/students"
+            className="text-sm font-medium"
+            style={{ color: 'rgba(255,255,255,0.85)' }}
+          >
+            View Students
+          </Link>
+        </div>
+      </div>
+
       {/* Top summary cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {isDark ? (
@@ -144,36 +186,51 @@ export function Dashboard() {
             ))}
           </>
         ) : (
-          // Light mode cards (original styling)
+          // Light mode cards — new clean design
           <>
-            <div className="rounded-2xl bg-white border border-slate-200 p-4 flex flex-col justify-between shadow-sm">
+            <div className="rounded-2xl p-4 flex flex-col justify-between shadow-sm" style={{ background: 'var(--panel)', border: '1px solid var(--border)' }}>
               <div className="flex items-center justify-between gap-2">
-                <h3 className="text-sm font-semibold text-slate-800">Students</h3>
-                <Link to="/students" className="text-[11px] text-indigo-600 hover:text-indigo-700">Manage →</Link>
+                <h3 className="text-sm font-semibold" style={{ color: 'var(--text)' }}>Students</h3>
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #4F7EFF, #7c3aed)' }}>
+                  <span className="text-white text-base" aria-hidden="true">◉</span>
+                </div>
               </div>
-              <p className="mt-3 text-3xl font-bold text-indigo-600">{studentCount}</p>
-              <p className="mt-1 text-xs text-slate-400">Active learners in your panel</p>
-            </div>
-            <div className="rounded-2xl bg-white border border-slate-200 p-4 flex flex-col justify-between shadow-sm">
-              <div className="flex items-center justify-between gap-2">
-                <h3 className="text-sm font-semibold text-slate-800">Completed Evaluations</h3>
-                <Link to="/evaluations" className="text-[11px] text-indigo-600 hover:text-indigo-700">View all →</Link>
+              <p className="mt-3 text-3xl font-bold" style={{ color: 'var(--text)' }}>{studentCount}</p>
+              <div className="flex items-center justify-between mt-1">
+                <p className="text-xs" style={{ color: 'var(--muted)' }}>Active learners in your panel</p>
+                <Link to="/students" className="text-[11px] font-medium" style={{ color: 'var(--accent)' }}>Manage →</Link>
               </div>
-              <p className="mt-3 text-3xl font-bold text-sky-600">{completedCount}</p>
-              <p className="mt-1 text-xs text-slate-400">Saved evaluations across all weeks</p>
             </div>
-            <div className="rounded-2xl bg-white border border-slate-200 p-4 flex flex-col justify-between shadow-sm">
+            <div className="rounded-2xl p-4 flex flex-col justify-between shadow-sm" style={{ background: 'var(--panel)', border: '1px solid var(--border)' }}>
               <div className="flex items-center justify-between gap-2">
-                <h3 className="text-sm font-semibold text-slate-800">Overall Rating</h3>
-                <span className="text-[11px] text-slate-400">1–5 scale</span>
+                <h3 className="text-sm font-semibold" style={{ color: 'var(--text)' }}>Completed Evaluations</h3>
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #00d4ff, #7c3aed)' }}>
+                  <span className="text-white text-base" aria-hidden="true">≡</span>
+                </div>
+              </div>
+              <p className="mt-3 text-3xl font-bold" style={{ color: 'var(--text)' }}>{completedCount}</p>
+              <div className="flex items-center justify-between mt-1">
+                <p className="text-xs" style={{ color: 'var(--muted)' }}>Saved evaluations across all weeks</p>
+                <Link to="/evaluations" className="text-[11px] font-medium" style={{ color: 'var(--accent)' }}>View all →</Link>
+              </div>
+            </div>
+            <div className="rounded-2xl p-4 flex flex-col justify-between shadow-sm" style={{ background: 'var(--panel)', border: '1px solid var(--border)' }}>
+              <div className="flex items-center justify-between gap-2">
+                <h3 className="text-sm font-semibold" style={{ color: 'var(--text)' }}>Overall Rating</h3>
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #2ed573, #00d4ff)' }}>
+                  <span className="text-white text-base" aria-hidden="true">↗</span>
+                </div>
               </div>
               {overallAvg ? (
                 <>
-                  <p className="mt-3 text-3xl font-bold text-emerald-600">{overallAvg}/5</p>
-                  <p className="mt-1 text-xs text-slate-400">Average across all evaluations</p>
+                  <p className="mt-3 text-3xl font-bold" style={{ color: 'var(--text)' }}>{overallAvg}/5</p>
+                  <div className="flex items-center justify-between mt-1">
+                    <p className="text-xs" style={{ color: 'var(--muted)' }}>Average across all evaluations</p>
+                    <span className="text-[11px] font-semibold" style={{ color: '#22c55e' }}>1–5 scale</span>
+                  </div>
                 </>
               ) : (
-                <p className="mt-4 text-xs text-slate-500">No evaluations yet.</p>
+                <p className="mt-4 text-xs" style={{ color: 'var(--muted)' }}>No evaluations yet.</p>
               )}
             </div>
           </>

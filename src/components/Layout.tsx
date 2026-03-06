@@ -11,12 +11,17 @@ const NAV_SECTIONS = [
     items: [{ path: "/", label: "Dashboard" }],
   },
   {
-    label: "NAVIGATION",
+    label: "EVALUATION",
     items: [
       { path: "/students", label: "Students" },
       { path: "/evaluate", label: "New Evaluation" },
       { path: "/evaluations", label: "All Evaluations" },
       { path: "/progress", label: "Progress View" },
+    ],
+  },
+  {
+    label: "SCHEDULE",
+    items: [
       { path: "/calendar", label: "Calendar" },
     ],
   },
@@ -306,19 +311,27 @@ export function Layout({ children }: { children: ReactNode }) {
               style={{
                 background: isDark
                   ? "linear-gradient(135deg, rgba(255,45,120,0.15), rgba(124,58,237,0.15))"
-                  : "linear-gradient(135deg, #4361ee 0%, #7c3aed 100%)",
+                  : "linear-gradient(135deg, #6c3fc5 0%, #4F7EFF 100%)",
                 border: `1px solid ${isDark ? "rgba(255,45,120,0.2)" : "transparent"}`,
               }}
             >
-              <p className="text-xs font-semibold text-white mb-0.5">PreceptorEval</p>
+              <p className="text-xs font-semibold text-white mb-0.5">
+                {isDark ? "PreceptorEval" : "Upgrade to Pro"}
+              </p>
               <p className="text-[10px] mb-2" style={{ color: isDark ? "rgba(255,255,255,0.6)" : "rgba(255,255,255,0.8)" }}>
-                Local-only · Your data stays private
+                {isDark ? "Local-only · Your data stays private" : "Unlock premium features"}
               </p>
               <Link
                 to="/settings"
                 className="text-[10px] font-medium text-white underline-offset-2 hover:underline"
+                style={isDark ? undefined : {
+                  display: "inline-block",
+                  padding: "3px 10px",
+                  border: "1px solid rgba(255,255,255,0.6)",
+                  borderRadius: "6px",
+                }}
               >
-                View Settings →
+                {isDark ? "View Settings →" : "Learn More"}
               </Link>
             </div>
 
@@ -414,7 +427,7 @@ export function Layout({ children }: { children: ReactNode }) {
             <main
               className="flex-1 overflow-y-auto p-5"
               style={{
-                background: isDark ? "rgba(10,10,15,0.8)" : "var(--panel-2)",
+                background: isDark ? "rgba(10,10,15,0.8)" : "var(--bg)",
               }}
             >
               {children}
