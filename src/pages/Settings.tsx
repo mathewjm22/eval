@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAppData } from '../context';
+import { useTheme } from '../theme';
 import { PreceptorProfile } from '../types';
 import { exportToJSON } from '../store';
 import { downloadAsFile, uploadFromFile } from '../googleDrive';
@@ -32,6 +33,8 @@ function resizeImageToDataUrl(file: File, maxSize = 128): Promise<string> {
 
 export function Settings() {
   const { data, updatePreceptor, importData, drive } = useAppData();
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
 
   const [profile, setProfile] = useState<PreceptorProfile>({ ...data.preceptor });
   const [profileSaved, setProfileSaved] = useState(false);
@@ -125,13 +128,13 @@ export function Settings() {
   return (
     <div className="max-w-3xl mx-auto space-y-6">
       <div>
-        <h2 className="text-2xl font-bold text-slate-800">⚙️ Settings</h2>
-        <p className="text-sm text-slate-400 mt-1">Configure your profile and data management</p>
+        <h2 className="text-2xl font-bold" style={{ color: 'var(--text)' }}>⚙️ Settings</h2>
+        <p className="text-sm mt-1" style={{ color: 'var(--muted)' }}>Configure your profile and data management</p>
       </div>
 
       {/* Preceptor Profile */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
-        <h3 className="font-bold text-slate-800 text-lg mb-4">🩺 Preceptor Profile</h3>
+      <div className="rounded-2xl p-6 shadow-sm" style={{ background: 'var(--panel)', border: '1px solid var(--border)' }}>
+        <h3 className="font-bold text-lg mb-4" style={{ color: 'var(--text)' }}>🩺 Preceptor Profile</h3>
         <div className="space-y-4">
 
           {/* Avatar upload */}
@@ -139,7 +142,8 @@ export function Settings() {
             <button
               type="button"
               onClick={() => avatarInputRef.current?.click()}
-              className="relative group flex-shrink-0 w-20 h-20 rounded-2xl overflow-hidden border-2 border-dashed border-slate-200 hover:border-indigo-400 transition-colors focus:outline-none focus:border-indigo-400"
+              className="relative group flex-shrink-0 w-20 h-20 rounded-2xl overflow-hidden border-2 border-dashed transition-colors focus:outline-none"
+              style={{ borderColor: 'var(--border)' }}
               title="Click to upload avatar photo"
             >
               {profile.avatarDataUrl ? (
@@ -149,7 +153,7 @@ export function Settings() {
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <div className="w-full h-full flex flex-col items-center justify-center bg-slate-50 text-slate-400 gap-1">
+                <div className="w-full h-full flex flex-col items-center justify-center gap-1" style={{ background: 'var(--panel-2)', color: 'var(--muted)' }}>
                   <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
                       d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -176,11 +180,12 @@ export function Settings() {
               <button
                 type="button"
                 onClick={() => avatarInputRef.current?.click()}
-                className="block text-sm font-medium text-indigo-600 hover:text-indigo-700 transition-colors"
+                className="block text-sm font-medium transition-colors"
+                style={{ color: 'var(--accent)' }}
               >
                 {profile.avatarDataUrl ? 'Change photo' : 'Upload photo'}
               </button>
-              <p className="text-xs text-slate-400">Any image format · Converted to 128×128 JPEG</p>
+              <p className="text-xs" style={{ color: 'var(--muted)' }}>Any image format · Converted to 128×128 JPEG</p>
               {profile.avatarDataUrl && (
                 <button
                   type="button"
@@ -195,59 +200,65 @@ export function Settings() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Full Name</label>
+              <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text)' }}>Full Name</label>
               <input
                 type="text"
                 value={profile.name}
                 onChange={e => setProfile({ ...profile, name: e.target.value })}
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none"
+                className="w-full px-4 py-2.5 rounded-xl border outline-none"
+                style={{ background: 'var(--panel-2)', borderColor: 'var(--border)', color: 'var(--text)' }}
                 placeholder="Dr. John Doe"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Title</label>
+              <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text)' }}>Title</label>
               <input
                 type="text"
                 value={profile.title}
                 onChange={e => setProfile({ ...profile, title: e.target.value })}
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none"
+                className="w-full px-4 py-2.5 rounded-xl border outline-none"
+                style={{ background: 'var(--panel-2)', borderColor: 'var(--border)', color: 'var(--text)' }}
                 placeholder="Assistant Professor of Medicine"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Institution</label>
+              <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text)' }}>Institution</label>
               <input
                 type="text"
                 value={profile.institution}
                 onChange={e => setProfile({ ...profile, institution: e.target.value })}
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none"
+                className="w-full px-4 py-2.5 rounded-xl border outline-none"
+                style={{ background: 'var(--panel-2)', borderColor: 'var(--border)', color: 'var(--text)' }}
                 placeholder="University Medical Center"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Specialty</label>
+              <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text)' }}>Specialty</label>
               <input
                 type="text"
                 value={profile.specialty}
                 onChange={e => setProfile({ ...profile, specialty: e.target.value })}
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none"
+                className="w-full px-4 py-2.5 rounded-xl border outline-none"
+                style={{ background: 'var(--panel-2)', borderColor: 'var(--border)', color: 'var(--text)' }}
                 placeholder="Family Medicine"
               />
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
+            <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text)' }}>Email</label>
             <input
               type="email"
               value={profile.email}
               onChange={e => setProfile({ ...profile, email: e.target.value })}
-              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none"
+              className="w-full px-4 py-2.5 rounded-xl border outline-none"
+              style={{ background: 'var(--panel-2)', borderColor: 'var(--border)', color: 'var(--text)' }}
               placeholder="preceptor@university.edu"
             />
           </div>
           <button
             onClick={handleSaveProfile}
-            className="bg-indigo-600 text-white px-6 py-2.5 rounded-xl font-medium text-sm hover:bg-indigo-700 transition-colors shadow-md shadow-indigo-200"
+            className="px-6 py-2.5 rounded-xl font-medium text-sm text-white transition-colors"
+            style={{ background: 'var(--accent)' }}
           >
             {profileSaved ? '✅ Saved!' : 'Save Profile'}
           </button>
@@ -255,9 +266,9 @@ export function Settings() {
       </div>
 
       {/* Local File Backup */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
-        <h3 className="font-bold text-slate-800 text-lg mb-2">💾 Local File Backup</h3>
-        <p className="text-sm text-slate-400 mb-4">
+      <div className="rounded-2xl p-6 shadow-sm" style={{ background: 'var(--panel)', border: '1px solid var(--border)' }}>
+        <h3 className="font-bold text-lg mb-2" style={{ color: 'var(--text)' }}>💾 Local File Backup</h3>
+        <p className="text-sm mb-4" style={{ color: 'var(--muted)' }}>
           Download your data as a JSON file or import a previously saved backup.
         </p>
         <div className="flex flex-wrap gap-3">
@@ -277,9 +288,9 @@ export function Settings() {
       </div>
 
       {/* Google Drive */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
-        <h3 className="font-bold text-slate-800 text-lg mb-2">☁️ Google Drive Sync</h3>
-        <p className="text-sm text-slate-400 mb-4">
+      <div className="rounded-2xl p-6 shadow-sm" style={{ background: 'var(--panel)', border: '1px solid var(--border)' }}>
+        <h3 className="font-bold text-lg mb-2" style={{ color: 'var(--text)' }}>☁️ Google Drive Sync</h3>
+        <p className="text-sm mb-4" style={{ color: 'var(--muted)' }}>
           Connect to Google Drive. Once connected, your changes will auto-save (debounced).
         </p>
 
@@ -306,13 +317,14 @@ export function Settings() {
             <button
               onClick={handleReloadFromDrive}
               disabled={drive.status !== 'connected'}
-              className="bg-slate-100 text-slate-700 px-4 py-2.5 rounded-xl font-medium text-sm hover:bg-slate-200 transition-colors disabled:opacity-50"
+              className="px-4 py-2.5 rounded-xl font-medium text-sm transition-colors disabled:opacity-50"
+              style={{ background: 'var(--panel-2)', color: 'var(--text)', border: '1px solid var(--border)' }}
             >
               Reload from Drive
             </button>
 
-            <span className="text-xs text-slate-400">
-              Status: <span className="font-medium text-slate-600">{drive.message}</span>
+            <span className="text-xs" style={{ color: 'var(--muted)' }}>
+              Status: <span className="font-medium" style={{ color: 'var(--text)' }}>{drive.message}</span>
               {drive.lastSyncedAt ? (
                 <span className="ml-2">(last synced {new Date(drive.lastSyncedAt).toLocaleString()})</span>
               ) : null}
@@ -335,30 +347,30 @@ export function Settings() {
       )}
 
       {/* Data Stats */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
-        <h3 className="font-bold text-slate-800 text-lg mb-4">📊 Data Summary</h3>
+      <div className="rounded-2xl p-6 shadow-sm" style={{ background: 'var(--panel)', border: '1px solid var(--border)' }}>
+        <h3 className="font-bold text-lg mb-4" style={{ color: 'var(--text)' }}>📊 Data Summary</h3>
         <div className="grid grid-cols-3 gap-4 text-center">
-          <div className="bg-slate-50 rounded-xl p-4">
-            <p className="text-2xl font-bold text-indigo-600">{data.students.length}</p>
-            <p className="text-xs text-slate-400">Students</p>
+          <div className="rounded-xl p-4" style={{ background: 'var(--panel-2)' }}>
+            <p className="text-2xl font-bold" style={{ color: 'var(--accent)' }}>{data.students.length}</p>
+            <p className="text-xs" style={{ color: 'var(--muted)' }}>Students</p>
           </div>
-          <div className="bg-slate-50 rounded-xl p-4">
-            <p className="text-2xl font-bold text-indigo-600">{data.evaluations.length}</p>
-            <p className="text-xs text-slate-400">Evaluations</p>
+          <div className="rounded-xl p-4" style={{ background: 'var(--panel-2)' }}>
+            <p className="text-2xl font-bold" style={{ color: 'var(--accent)' }}>{data.evaluations.length}</p>
+            <p className="text-xs" style={{ color: 'var(--muted)' }}>Evaluations</p>
           </div>
-          <div className="bg-slate-50 rounded-xl p-4">
-            <p className="text-2xl font-bold text-indigo-600">
+          <div className="rounded-xl p-4" style={{ background: 'var(--panel-2)' }}>
+            <p className="text-2xl font-bold" style={{ color: 'var(--accent)' }}>
               {(JSON.stringify(data).length / 1024).toFixed(1)} KB
             </p>
-            <p className="text-xs text-slate-400">Data Size</p>
+            <p className="text-xs" style={{ color: 'var(--muted)' }}>Data Size</p>
           </div>
         </div>
       </div>
 
       {/* Danger Zone */}
-      <div className="bg-white rounded-2xl border border-red-200 p-6 shadow-sm">
-        <h3 className="font-bold text-red-700 text-lg mb-2">⚠️ Danger Zone</h3>
-        <p className="text-sm text-slate-400 mb-4">This action cannot be undone. Make sure to download a backup first.</p>
+      <div className="rounded-2xl p-6 shadow-sm" style={{ background: isDark ? 'rgba(255,71,87,0.08)' : '#fff1f2', border: isDark ? '1px solid rgba(255,71,87,0.25)' : '1px solid #fecdd3' }}>
+        <h3 className="font-bold text-lg mb-2 text-red-600">⚠️ Danger Zone</h3>
+        <p className="text-sm mb-4" style={{ color: 'var(--muted)' }}>This action cannot be undone. Make sure to download a backup first.</p>
         <button
           onClick={handleClearAllData}
           className="bg-red-600 text-white px-5 py-2.5 rounded-xl font-medium text-sm hover:bg-red-700 transition-colors"

@@ -9,16 +9,16 @@
 :root {
   /* light */
   color-scheme: light;
-  --bg: #eef0f7;
+  --bg: #f0f2f8;
   --panel: #ffffff;
-  --panel-2: #f6f7fb;
-  --border: rgba(0, 0, 0, 0.07);
-  --text: #0b1220;
+  --panel-2: #f8f9fc;
+  --border: rgba(0, 0, 0, 0.06);
+  --text: #1a1f36;
   --muted: #8a94a6;
 
   /* accent */
-  --accent: #4361ee;
-  --accent-soft: rgba(67, 97, 238, 0.10);
+  --accent: #4F7EFF;
+  --accent-soft: rgba(79, 126, 255, 0.10);
 
   /* sidebar / header */
   --sidebar-bg: #ffffff;
@@ -79,7 +79,7 @@ body {
 }
 
 body {
-  background: linear-gradient(135deg, #e8eaf6 0%, #f0f2f8 40%, #e8f4f8 100%);
+  background: var(--bg);
   color: var(--text);
 }
 
