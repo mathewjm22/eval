@@ -1,11 +1,16 @@
 import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { useAppData } from '../context';
 import { useTheme } from '../theme';
 import { PHASE_CONFIG, SCORE_CATEGORIES, SessionEvaluation } from '../types';
 import { CompetencyRadar } from '../components/charts/CompetencyRadar';
 import { OverallLine } from '../components/charts/OverallLine';
 import { TopicCoverageWidget } from '../components/TopicCoverageWidget';
+import { AnimatedBarChart } from '../components/charts/AnimatedBarChart';
+import { AnimatedDonutChart } from '../components/charts/AnimatedDonutChart';
+import { AnimatedButton } from '../components/AnimatedButton';
+import { truncateChartLabel } from '../utils/chartConstants';
 
 export function Dashboard() {
   const { data } = useAppData();
@@ -49,6 +54,26 @@ export function Dashboard() {
       label: cat.label,
       avg: (evaluations.reduce((s, ev) => s + (ev.scores[cat.key] ?? 0), 0) / evaluations.length).toFixed(1),
     }));
+  }, [evaluations]);
+
+  // Data for animated bar chart (category averages)
+  const categoryBarData = useMemo(() => {
+    if (!evaluations.length) return [];
+    return SCORE_CATEGORIES.map(cat => ({
+      name: truncateChartLabel(cat.label),
+      Score: parseFloat((evaluations.reduce((s, ev) => s + (ev.scores[cat.key] ?? 0), 0) / evaluations.length).toFixed(2)),
+    }));
+  }, [evaluations]);
+
+  // Data for animated donut chart (phase distribution)
+  const phaseDonutData = useMemo(() => {
+    const counts: Record<string, number> = { early: 0, middle: 0, final: 0 };
+    evaluations.forEach(ev => { counts[ev.phase] = (counts[ev.phase] ?? 0) + 1; });
+    return [
+      { name: 'Early', value: counts.early, color: '#7c3aed' },
+      { name: 'Middle', value: counts.middle, color: '#00d4ff' },
+      { name: 'Final', value: counts.final, color: '#2ed573' },
+    ].filter(d => d.value > 0);
   }, [evaluations]);
 
   const [selectedStudentId, setSelectedStudentId] = useState<string | undefined>(undefined);
@@ -103,7 +128,10 @@ export function Dashboard() {
   return (
     <div className="space-y-6">
       {/* Hero banner */}
-      <div
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35, ease: 'easeOut' }}
         className="rounded-2xl p-6 relative overflow-hidden"
         style={{
           background: isDark
@@ -127,13 +155,14 @@ export function Dashboard() {
           Your evaluation platform is ready. Track progress and guide your learners.
         </p>
         <div className="mt-4 flex items-center gap-3">
-          <Link
-            to="/evaluate"
-            className="px-5 py-2 rounded-xl text-sm font-semibold"
-            style={{ background: '#fff', color: '#4F7EFF' }}
+          <AnimatedButton
+            variant="secondary"
+            size="sm"
+            onClick={() => navigate('/evaluate')}
+            style={{ background: '#fff', color: '#4F7EFF', border: 'none' }}
           >
             + New Evaluation →
-          </Link>
+          </AnimatedButton>
           <Link
             to="/students"
             className="text-sm font-medium"
@@ -142,16 +171,19 @@ export function Dashboard() {
             View Students
           </Link>
         </div>
-      </div>
+      </motion.div>
 
       {/* Top summary cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {isDark ? (
           // Neon dark stat cards
           <>
-            {statCards.map((card) => (
-              <div
+            {statCards.map((card, i) => (
+              <motion.div
                 key={card.title}
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.35, delay: i * 0.07, ease: 'easeOut' }}
                 className="rounded-2xl p-4 flex flex-col justify-between relative overflow-hidden"
                 style={{
                   background: card.gradient,
@@ -182,13 +214,19 @@ export function Dashboard() {
                 <p className="mt-1 text-xs" style={{ color: 'rgba(255,255,255,0.48)' }}>
                   {card.sub}
                 </p>
-              </div>
+              </motion.div>
             ))}
           </>
         ) : (
           // Light mode cards — new clean design
           <>
-            <div className="rounded-2xl p-4 flex flex-col justify-between shadow-sm" style={{ background: 'var(--panel)', border: '1px solid var(--border)' }}>
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.35, delay: 0, ease: 'easeOut' }}
+              className="rounded-2xl p-4 flex flex-col justify-between shadow-sm"
+              style={{ background: 'var(--panel)', border: '1px solid var(--border)' }}
+            >
               <div className="flex items-center justify-between gap-2">
                 <h3 className="text-sm font-semibold" style={{ color: 'var(--text)' }}>Students</h3>
                 <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #4F7EFF, #7c3aed)' }}>
@@ -200,8 +238,14 @@ export function Dashboard() {
                 <p className="text-xs" style={{ color: 'var(--muted)' }}>Active learners in your panel</p>
                 <Link to="/students" className="text-[11px] font-medium" style={{ color: 'var(--accent)' }}>Manage →</Link>
               </div>
-            </div>
-            <div className="rounded-2xl p-4 flex flex-col justify-between shadow-sm" style={{ background: 'var(--panel)', border: '1px solid var(--border)' }}>
+            </motion.div>
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.35, delay: 0.07, ease: 'easeOut' }}
+              className="rounded-2xl p-4 flex flex-col justify-between shadow-sm"
+              style={{ background: 'var(--panel)', border: '1px solid var(--border)' }}
+            >
               <div className="flex items-center justify-between gap-2">
                 <h3 className="text-sm font-semibold" style={{ color: 'var(--text)' }}>Completed Evaluations</h3>
                 <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #00d4ff, #7c3aed)' }}>
@@ -213,8 +257,14 @@ export function Dashboard() {
                 <p className="text-xs" style={{ color: 'var(--muted)' }}>Saved evaluations across all weeks</p>
                 <Link to="/evaluations" className="text-[11px] font-medium" style={{ color: 'var(--accent)' }}>View all →</Link>
               </div>
-            </div>
-            <div className="rounded-2xl p-4 flex flex-col justify-between shadow-sm" style={{ background: 'var(--panel)', border: '1px solid var(--border)' }}>
+            </motion.div>
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.35, delay: 0.14, ease: 'easeOut' }}
+              className="rounded-2xl p-4 flex flex-col justify-between shadow-sm"
+              style={{ background: 'var(--panel)', border: '1px solid var(--border)' }}
+            >
               <div className="flex items-center justify-between gap-2">
                 <h3 className="text-sm font-semibold" style={{ color: 'var(--text)' }}>Overall Rating</h3>
                 <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #2ed573, #00d4ff)' }}>
@@ -232,7 +282,7 @@ export function Dashboard() {
               ) : (
                 <p className="mt-4 text-xs" style={{ color: 'var(--muted)' }}>No evaluations yet.</p>
               )}
-            </div>
+            </motion.div>
           </>
         )}
 
@@ -551,6 +601,27 @@ export function Dashboard() {
             studentId={selectedStudentId}
           />
         </div>
+
+        {/* Animated charts row */}
+        {evaluations.length > 0 && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
+            <AnimatedBarChart
+              data={categoryBarData}
+              bars={[{ dataKey: 'Score', name: 'Avg Score', cellColors: ['#7c3aed', '#00d4ff', '#2ed573', '#ff2d78', '#ff9500', '#10b981', '#f59e0b'] }]}
+              xDataKey="name"
+              yDomain={[0, 5]}
+              height={240}
+              title="Category Score Breakdown"
+            />
+            {phaseDonutData.length > 0 && (
+              <AnimatedDonutChart
+                data={phaseDonutData}
+                height={240}
+                title="Evaluations by Phase"
+              />
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
