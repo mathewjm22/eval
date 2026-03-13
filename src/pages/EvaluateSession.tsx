@@ -535,6 +535,8 @@ export function EvaluateSession() {
           </div>
           {TEACHING_TOPIC_CATEGORIES.map(({ category, topics }) => {
             const selectedTopics = getTopicsForCategory(category);
+            const allTopics = Array.from(new Set([...topics, ...selectedTopics]));
+
             return (
               <div
                 key={category}
@@ -549,7 +551,7 @@ export function EvaluateSession() {
                   )}
                 </h4>
                 <div className="flex flex-wrap gap-2 mb-2">
-                  {topics.map(topic => {
+                  {allTopics.map(topic => {
                     const checked = selectedTopics.includes(topic);
                     return (
                       <label
