@@ -8,6 +8,7 @@ declare global {
 }
 
 let accessToken: string | null = null;
+let googleTokenClient: any = null;
 
 function loadScript(src: string): Promise<void> {
   return new Promise((resolve, reject) => {
@@ -24,7 +25,7 @@ export async function initGoogleAPI(clientId: string): Promise<boolean> {
   try {
     await loadScript('https://accounts.google.com/gsi/client');
     return new Promise((resolve) => {
-      const client = window.google.accounts.oauth2.initTokenClient({
+      googleTokenClient = window.google.accounts.oauth2.initTokenClient({
         client_id: clientId,
         scope: 'https://www.googleapis.com/auth/drive.appdata',
         callback: (resp: any) => {
@@ -33,27 +34,64 @@ export async function initGoogleAPI(clientId: string): Promise<boolean> {
           resolve(true);
         },
       });
-      client.requestAccessToken();
+      googleTokenClient.requestAccessToken();
     });
   } catch {
     return false;
   }
 }
 
+function refreshAccessToken(): Promise<boolean> {
+  return new Promise((resolve) => {
+    if (!googleTokenClient) {
+      resolve(false);
+      return;
+    }
+    const originalCallback = googleTokenClient.callback;
+    googleTokenClient.callback = (resp: any) => {
+      googleTokenClient.callback = originalCallback;
+      if (resp.error) {
+        resolve(false);
+        return;
+      }
+      accessToken = resp.access_token;
+      resolve(true);
+    };
+    googleTokenClient.requestAccessToken({ prompt: '' });
+  });
+}
+
 async function driveRequest(method: string, url: string, body?: BodyInit, extraHeaders?: Record<string, string>): Promise<Response> {
   if (!accessToken) throw new Error('Not authenticated with Google Drive');
-  return fetch(url, {
+  let res = await fetch(url, {
     method,
     headers: { Authorization: `Bearer ${accessToken}`, ...extraHeaders },
     body,
   });
+
+  // If token expired (401), try to refresh it silently and retry once.
+  if (res.status === 401 && googleTokenClient) {
+    const refreshed = await refreshAccessToken();
+    if (refreshed && accessToken) {
+      res = await fetch(url, {
+        method,
+        headers: { Authorization: `Bearer ${accessToken}`, ...extraHeaders },
+        body,
+      });
+    } else {
+      throw new Error('Google Drive session expired. Please reconnect.');
+    }
+  }
+  return res;
 }
 
 async function findFile(name: string): Promise<string | null> {
+  const query = encodeURIComponent(`name='${name}'`);
   const res = await driveRequest(
     'GET',
-    `https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=name='${name}'&fields=files(id)`
+    `https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=${query}&fields=files(id)`
   );
+  if (!res.ok) return null;
   const data = await res.json();
   return data.files?.[0]?.id ?? null;
 }
@@ -61,19 +99,33 @@ async function findFile(name: string): Promise<string | null> {
 export async function saveToGoogleDrive(json: string, filename: string): Promise<void> {
   const existingId = await findFile(filename);
   const metadata = { name: filename, parents: existingId ? undefined : ['appDataFolder'] };
-  const blob = new Blob([json], { type: 'application/json' });
 
-  const form = new FormData();
-  form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
-  form.append('file', blob);
+  const boundary = '-------314159265358979323846';
+  const delimiter = `\r\n--${boundary}\r\n`;
+  const close_delim = `\r\n--${boundary}--`;
+
+  const multipartRequestBody =
+    delimiter +
+    'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
+    JSON.stringify(metadata) +
+    delimiter +
+    'Content-Type: application/json\r\n\r\n' +
+    json +
+    close_delim;
 
   const url = existingId
     ? `https://www.googleapis.com/upload/drive/v3/files/${existingId}?uploadType=multipart`
     : 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
   const method = existingId ? 'PATCH' : 'POST';
 
-  const res = await driveRequest(method, url, form);
-  if (!res.ok) throw new Error(`Drive save failed: ${res.statusText}`);
+  const res = await driveRequest(method, url, multipartRequestBody, {
+    'Content-Type': `multipart/related; boundary=${boundary}`,
+  });
+
+  if (!res.ok) {
+    const errorText = await res.text();
+    throw new Error(`Drive save failed: ${res.statusText} - ${errorText}`);
+  }
 }
 
 export async function loadFromGoogleDrive(filename: string): Promise<string | null> {

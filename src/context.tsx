@@ -186,8 +186,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         setDriveMessage('Synced to Google Drive.');
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : 'Unknown error';
-        setDriveStatus('error');
-        setDriveMessage(`Auto-save failed: ${message}`);
+        if (message.includes('expired') || message.includes('authenticate')) {
+          setDriveStatus('disconnected');
+          setDriveMessage('Session expired. Please reconnect to Google Drive.');
+        } else {
+          setDriveStatus('error');
+          setDriveMessage(`Auto-save failed: ${message}`);
+        }
       }
     }, 1000);
   }, [driveStatus]);
@@ -209,8 +214,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       setDriveMessage('Loaded from Google Drive.');
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Unknown error';
-      setDriveStatus('error');
-      setDriveMessage(`Drive load failed: ${message}`);
+      if (message.includes('expired') || message.includes('authenticate')) {
+        setDriveStatus('disconnected');
+        setDriveMessage('Session expired. Please reconnect to Google Drive.');
+      } else {
+        setDriveStatus('error');
+        setDriveMessage(`Drive load failed: ${message}`);
+      }
     }
   }, [driveStatus]);
 
