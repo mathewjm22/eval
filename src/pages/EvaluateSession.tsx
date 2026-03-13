@@ -1,7 +1,8 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
 import { useAppData } from '../context';
+import { determinePhaseFromDate, calculateWeekNumberFromDate } from '../utils/dateUtils';
 import {
   SessionEvaluation,
   SCORE_CATEGORIES,
@@ -60,8 +61,8 @@ export function EvaluateSession() {
       id: uuidv4(),
       studentId: data.students[0]?.id || '',
       date: new Date().toISOString().split('T')[0],
-      weekNumber: 1,
-      phase: 'early' as Phase,
+      weekNumber: calculateWeekNumberFromDate(new Date().toISOString().split('T')[0]),
+      phase: determinePhaseFromDate(new Date().toISOString().split('T')[0]) as Phase,
       sessionType: SESSION_TYPES[0],
       patientEncounters: 0,
       scores: { ...DEFAULT_SCORES },
@@ -91,12 +92,29 @@ export function EvaluateSession() {
   const [customConditionInput, setCustomConditionInput] = useState('');
   const [customTopicInputs, setCustomTopicInputs] = useState<Record<string, string>>({});
 
-  // Auto-determine phase from week number
+  // Effect to automatically calculate phase and weekNumber when date changes
+  useEffect(() => {
+    if (form.date) {
+      const calculatedPhase = determinePhaseFromDate(form.date);
+      const calculatedWeek = calculateWeekNumberFromDate(form.date);
+
+      setForm(prev => {
+        if (prev.phase !== calculatedPhase || prev.weekNumber !== calculatedWeek) {
+          return {
+            ...prev,
+            phase: calculatedPhase,
+            weekNumber: calculatedWeek
+          };
+        }
+        return prev;
+      });
+    }
+  }, [form.date]);
+
+  // Auto-determine phase from date string
   const autoPhase = useMemo((): Phase => {
-    if (form.weekNumber <= 12) return 'early';
-    if (form.weekNumber <= 30) return 'middle';
-    return 'final';
-  }, [form.weekNumber]);
+    return determinePhaseFromDate(form.date);
+  }, [form.date]);
 
   // Effective phase: manual override takes priority over auto
   const effectivePhase: Phase = form.phaseOverride || autoPhase;
@@ -342,25 +360,14 @@ export function EvaluateSession() {
                 className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none"
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                Week Number (1-52)
-              </label>
-              <input
-                type="number"
-                min={1}
-                max={52}
-                value={form.weekNumber}
-                onChange={e =>
-                  updateForm('weekNumber', parseInt(e.target.value) || 1)
-                }
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none"
-              />
-              <p className="text-xs mt-1">
+              <p className="text-xs mt-1 flex gap-2">
                 <span
                   className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${PHASE_CONFIG[autoPhase].bgColor} ${PHASE_CONFIG[autoPhase].color} border ${PHASE_CONFIG[autoPhase].borderColor}`}
                 >
                   Auto: {PHASE_CONFIG[autoPhase].label} ({PHASE_CONFIG[autoPhase].weeks})
+                </span>
+                <span className="inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200">
+                  Calculated: Week {form.weekNumber}
                 </span>
               </p>
             </div>
@@ -378,7 +385,7 @@ export function EvaluateSession() {
                 }
                 className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none"
               >
-                <option value="">Auto (based on week)</option>
+                <option value="">Auto (based on date)</option>
                 <option value="early">Early Phase</option>
                 <option value="middle">Middle Phase</option>
                 <option value="final">Final Phase</option>

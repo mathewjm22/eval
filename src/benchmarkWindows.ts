@@ -21,14 +21,19 @@ export function getBenchmarkWindowForMonth(month: number): BenchmarkWindow {
 }
 
 /**
- * If you still want week-based badges on RotationSummary, keep these helpers.
- * These are independent of the month-based benchmark windows used for the
- * “Met / Not met” panel.
+ * Check if a given date string falls in the mid-year window.
  */
-export function isMidYearWeek(weekNumber: number): boolean {
-  return weekNumber >= 13 && weekNumber <= 16;
+export function isMidYearDate(dateString: string): boolean {
+  const date = new Date(dateString);
+  const month = date.getMonth(); // 0 = Jan
+  return month >= 1 && month <= 3; // Feb-Apr
 }
 
-export function isEndOfYearWeek(weekNumber: number): boolean {
-  return weekNumber >= 31 && weekNumber <= 34;
+/**
+ * Check if a given date string falls in the end-of-year window.
+ */
+export function isEndOfYearDate(dateString: string): boolean {
+  const date = new Date(dateString);
+  const month = date.getMonth(); // 0 = Jan
+  return month >= 4 && month <= 6; // May-Jul
 }
