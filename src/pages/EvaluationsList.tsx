@@ -7,14 +7,7 @@ import {
   SCORE_LABELS,
   RED_FLAG_COMPETENCIES,
 } from '../types';
-
-// Helpers for mid-year / final time windows
-function isMidYearWindow(weekNumber: number) {
-  return weekNumber >= 13 && weekNumber <= 16;
-}
-function isFinalWindow(weekNumber: number) {
-  return weekNumber >= 31 && weekNumber <= 34;
-}
+import { isMidYearDate, isEndOfYearDate } from '../benchmarkWindows';
 
 export function EvaluationsList() {
   const { data, deleteEvaluation } = useAppData();
@@ -159,9 +152,9 @@ export function EvaluationsList() {
 
             // mid-year / final "window" badges
             const midWindow =
-              isMidYearWindow(ev.weekNumber) && ev.phase === 'middle';
+              isMidYearDate(ev.date) && ev.phase === 'middle';
             const finalWindow =
-              isFinalWindow(ev.weekNumber) && ev.phase === 'final';
+              isEndOfYearDate(ev.date) && ev.phase === 'final';
 
             const rf = ev.redFlagBenchmarks;
             const hasAnyRedFlagInfo =

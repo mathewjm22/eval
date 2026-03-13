@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useAppData } from '../context';
 import { PHASE_CONFIG, SessionEvaluation } from '../types';
-import { isMidYearWeek, isEndOfYearWeek } from '../benchmarkWindows';
+import { isMidYearDate, isEndOfYearDate } from '../benchmarkWindows';
 import { IM_BENCHMARKS } from '../imBenchmarks';
 import { TopicCoverageWidget } from '../components/TopicCoverageWidget';
 
@@ -280,9 +280,9 @@ function PhaseSection({
           const hasRedFlag = evalHasRedFlag(ev);
           const phaseConf = PHASE_CONFIG[ev.phase];
           const midWindow =
-            isMidYearWeek(ev.weekNumber) && ev.phase === 'middle';
+            isMidYearDate(ev.date) && ev.phase === 'middle';
           const finalWindow =
-            isEndOfYearWeek(ev.weekNumber) && ev.phase === 'final';
+            isEndOfYearDate(ev.date) && ev.phase === 'final';
 
           return (
             <button
