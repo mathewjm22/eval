@@ -16,10 +16,13 @@ import { Sparkline } from '../components/charts/Sparkline';
 
 export function Dashboard() {
   const { data } = useAppData();
-  const { students, evaluations, preceptor } = data;
+  const { students, evaluations: allEvaluations, preceptor } = data;
   const navigate = useNavigate();
   const { theme } = useTheme();
   const isDark = theme === 'dark';
+
+  // Exclude in-progress drafts from all statistics and displays.
+  const evaluations = useMemo(() => allEvaluations.filter(e => !e.isDraft), [allEvaluations]);
 
   const recentEvals = useMemo(
     () =>

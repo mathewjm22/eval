@@ -355,7 +355,7 @@ export function Settings() {
             <p className="text-xs" style={{ color: 'var(--muted)' }}>Students</p>
           </div>
           <div className="rounded-xl p-4" style={{ background: 'var(--panel-2)' }}>
-            <p className="text-2xl font-bold" style={{ color: 'var(--accent)' }}>{data.evaluations.length}</p>
+            <p className="text-2xl font-bold" style={{ color: 'var(--accent)' }}>{data.evaluations.filter(e => !e.isDraft).length}</p>
             <p className="text-xs" style={{ color: 'var(--muted)' }}>Evaluations</p>
           </div>
           <div className="rounded-xl p-4" style={{ background: 'var(--panel-2)' }}>

@@ -21,7 +21,7 @@ export function RemindersWidget({ studentId }: RemindersWidgetProps) {
     const items: { studentName: string; studentId: string; reminders: ReturnType<typeof getRemindersForStudent> }[] = [];
 
     targetStudents.forEach(student => {
-      const studentEvals = data.evaluations.filter(e => e.studentId === student.id);
+      const studentEvals = data.evaluations.filter(e => e.studentId === student.id && !e.isDraft);
       const studentReminders = getRemindersForStudent(studentEvals);
       if (studentReminders.length > 0) {
         items.push({

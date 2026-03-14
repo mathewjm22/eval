@@ -34,8 +34,9 @@ export function EvaluationCalendar() {
   const navigate = useNavigate();
 
   const [currentMonth, setCurrentMonth] = useState<Date>(() => {
-    if (data.evaluations.length > 0) {
-      const latest = [...data.evaluations].sort(
+    const nonDraftEvals = data.evaluations.filter(e => !e.isDraft);
+    if (nonDraftEvals.length > 0) {
+      const latest = [...nonDraftEvals].sort(
         (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
       )[0];
       return new Date(latest.date);
@@ -47,7 +48,7 @@ export function EvaluationCalendar() {
 
   const evaluationsByDate = useMemo(() => {
     const map = new Map<string, SessionEvaluation[]>();
-    for (const ev of data.evaluations) {
+    for (const ev of data.evaluations.filter(e => !e.isDraft)) {
       const iso = ev.date;
       if (!map.has(iso)) map.set(iso, []);
       map.get(iso)!.push(ev);

@@ -23,7 +23,7 @@ export function RotationSummary() {
   const studentEvals = useMemo(
     () =>
       data.evaluations
-        .filter(ev => ev.studentId === studentId)
+        .filter(ev => ev.studentId === studentId && !ev.isDraft)
         .sort(
           (a, b) =>
             new Date(a.date).getTime() - new Date(b.date).getTime(),
@@ -199,7 +199,7 @@ export function RotationSummary() {
       />
 
       {/* Teaching Topics Coverage */}
-      <TopicCoverageWidget evaluations={data.evaluations} studentId={studentId} />
+      <TopicCoverageWidget evaluations={data.evaluations.filter(e => !e.isDraft)} studentId={studentId} />
     </div>
   );
 }

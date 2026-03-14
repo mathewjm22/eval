@@ -15,7 +15,7 @@ export function ProgressView() {
 
   const studentEvals = useMemo(() => {
     return [...data.evaluations]
-      .filter(e => e.studentId === selectedStudent)
+      .filter(e => e.studentId === selectedStudent && !e.isDraft)
       .sort((a, b) => a.weekNumber - b.weekNumber);
   }, [data.evaluations, selectedStudent]);
 
