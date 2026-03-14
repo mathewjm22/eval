@@ -165,14 +165,27 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const latestDataRef = useRef<AppData>(data);
   const saveTimerRef = useRef<number | null>(null);
+  // Keep a ref that always holds the current driveStatus so async callbacks
+  // (like scheduleDriveSave and reloadFromDrive) never read a stale closure value.
+  const driveStatusRef = useRef<DriveStatus>('disconnected');
 
   useEffect(() => {
     latestDataRef.current = data;
     cacheData(data);
   }, [data]);
 
+  // Helper that updates both React state AND the ref atomically so every
+  // subsequent access – including inside pending async callbacks – sees the
+  // correct value without waiting for a re-render.
+  const setDriveStatusSync = useCallback((status: DriveStatus) => {
+    driveStatusRef.current = status;
+    setDriveStatus(status);
+  }, []);
+
   const scheduleDriveSave = useCallback(() => {
-    if (driveStatus !== 'connected') return;
+    // Use the ref so this callback never reads a stale driveStatus value even
+    // when it was closed-over before the most recent setDriveStatus call.
+    if (driveStatusRef.current !== 'connected') return;
 
     if (saveTimerRef.current != null) {
       window.clearTimeout(saveTimerRef.current);
@@ -187,18 +200,21 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : 'Unknown error';
         if (message.includes('expired') || message.includes('authenticate')) {
-          setDriveStatus('disconnected');
+          setDriveStatusSync('disconnected');
           setDriveMessage('Session expired. Please reconnect to Google Drive.');
         } else {
-          setDriveStatus('error');
+          setDriveStatusSync('error');
           setDriveMessage(`Auto-save failed: ${message}`);
         }
       }
     }, 1000);
-  }, [driveStatus]);
+  }, [setDriveStatusSync]);
 
   const reloadFromDrive = useCallback(async () => {
-    if (driveStatus !== 'connected') return;
+    // Guard with the ref, not driveStatus state, so this works correctly even
+    // when called immediately after setDriveStatus('connected') inside connect()
+    // before React has re-rendered with the new status value.
+    if (driveStatusRef.current !== 'connected') return;
 
     setDriveMessage('Loading from Google Drive...');
     try {
@@ -209,49 +225,58 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       }
 
       const merged = mergeIntoAppData(JSON.parse(json), latestDataRef.current);
+      // Update the ref before scheduling the save so the timer captures the
+      // latest merged data even before the React re-render flushes.
+      latestDataRef.current = merged;
       setData(merged);
       setLastSyncedAt(new Date().toISOString());
       setDriveMessage('Loaded from Google Drive.');
+      // Push merged result (which may include local-only data not yet on Drive)
+      // back to Drive so both sides stay in sync.
+      scheduleDriveSave();
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Unknown error';
       if (message.includes('expired') || message.includes('authenticate')) {
-        setDriveStatus('disconnected');
+        setDriveStatusSync('disconnected');
         setDriveMessage('Session expired. Please reconnect to Google Drive.');
       } else {
-        setDriveStatus('error');
+        setDriveStatusSync('error');
         setDriveMessage(`Drive load failed: ${message}`);
       }
     }
-  }, [driveStatus]);
+  }, [scheduleDriveSave, setDriveStatusSync]);
 
   const connect = useCallback(async () => {
     const clientId = (import.meta as any).env?.VITE_GOOGLE_CLIENT_ID as string | undefined;
 
     if (!clientId || !clientId.trim()) {
-      setDriveStatus('error');
+      setDriveStatusSync('error');
       setDriveMessage('Missing VITE_GOOGLE_CLIENT_ID. Set it in your Pages build environment.');
       return;
     }
 
-    setDriveStatus('connecting');
+    setDriveStatusSync('connecting');
     setDriveMessage('Connecting to Google Drive...');
     try {
       const ok = await initGoogleAPI(clientId);
       if (!ok) {
-        setDriveStatus('error');
+        setDriveStatusSync('error');
         setDriveMessage('Google Drive connection failed. Check your OAuth client ID/config.');
         return;
       }
 
-      setDriveStatus('connected');
+      // Update the ref BEFORE calling reloadFromDrive so its internal guard
+      // (driveStatusRef.current !== 'connected') passes immediately, without
+      // waiting for React to re-render with the new driveStatus state value.
+      setDriveStatusSync('connected');
       setDriveMessage('Connected. Loading from Google Drive...');
       await reloadFromDrive();
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Unknown error';
-      setDriveStatus('error');
+      setDriveStatusSync('error');
       setDriveMessage(`Connection error: ${message}`);
     }
-  }, [reloadFromDrive]);
+  }, [reloadFromDrive, setDriveStatusSync]);
 
   // ---- Mutators (same API as before) ----
 

@@ -23,7 +23,7 @@ export function EvaluationsList() {
     data.students.find((s) => s.id === id)?.name || 'Unknown';
 
   const filtered = useMemo(() => {
-    let evals = [...data.evaluations];
+    let evals = [...data.evaluations].filter(e => !e.isDraft);
 
     if (filterStudent !== 'all') {
       evals = evals.filter((e) => e.studentId === filterStudent);
@@ -45,6 +45,11 @@ export function EvaluationsList() {
 
     return evals;
   }, [data.evaluations, filterStudent, filterPhase, sortBy]);
+
+  const drafts = useMemo(
+    () => data.evaluations.filter(e => e.isDraft),
+    [data.evaluations],
+  );
 
   const handleDelete = (id: string) => {
     deleteEvaluation(id);
@@ -124,6 +129,50 @@ export function EvaluationsList() {
         </div>
       </div>
 
+      {/* Drafts section */}
+      {drafts.length > 0 && (
+        <div className="space-y-2">
+          <h3 className="text-sm font-semibold text-amber-700 flex items-center gap-2">
+            <span>✏️</span>
+            <span>In-Progress Drafts ({drafts.length})</span>
+          </h3>
+          {drafts.map((ev) => (
+            <div
+              key={ev.id}
+              className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center justify-between gap-4 shadow-sm"
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-9 h-9 bg-amber-100 rounded-full flex items-center justify-center text-amber-600 font-bold text-xs shrink-0">
+                  W{ev.weekNumber}
+                </div>
+                <div className="min-w-0">
+                  <p className="font-semibold text-slate-700 truncate text-sm">
+                    {getStudentName(ev.studentId)}
+                  </p>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    {ev.date} • {ev.sessionType} • last saved {new Date(ev.updatedAt).toLocaleString()}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  onClick={() => navigate(`/evaluations/${ev.id}`)}
+                  className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold rounded-lg transition-colors"
+                >
+                  Continue →
+                </button>
+                <button
+                  onClick={() => handleDelete(ev.id)}
+                  className="px-3 py-1.5 bg-red-100 hover:bg-red-200 text-red-600 text-xs font-semibold rounded-lg transition-colors"
+                >
+                  Discard
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* List */}
       {filtered.length === 0 ? (
         <div className="bg-white rounded-2xl border-2 border-dashed border-slate-200 p-12 text-center">
@@ -132,7 +181,7 @@ export function EvaluationsList() {
             No evaluations found
           </h3>
           <p className="text-sm text-slate-400 mt-2">
-            {data.evaluations.length === 0
+            {data.evaluations.filter(e => !e.isDraft).length === 0
               ? 'Create your first evaluation to see it here.'
               : 'Try adjusting your filters.'}
           </p>

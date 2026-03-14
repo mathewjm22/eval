@@ -23,7 +23,7 @@ export function Students() {
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
   const evalCountFor = (id: string) =>
-    data.evaluations.filter(e => e.studentId === id).length;
+    data.evaluations.filter(e => e.studentId === id && !e.isDraft).length;
 
   const openAdd = () => {
     setForm(EMPTY_FORM);
@@ -187,7 +187,7 @@ export function Students() {
           {data.students.map(s => {
             const evals = evalCountFor(s.id);
             const evalsForStudent = data.evaluations.filter(
-              e => e.studentId === s.id,
+              e => e.studentId === s.id && !e.isDraft,
             );
             const earlyCount = evalsForStudent.filter(
               e => e.phase === 'early',

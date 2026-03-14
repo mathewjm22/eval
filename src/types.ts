@@ -152,6 +152,8 @@ export interface SessionEvaluation {
     benchmarkAssessments?: {
     [benchmarkId: string]: BenchmarkAssessment;
   };
+  /** When true the evaluation is an in-progress draft and not yet submitted. */
+  isDraft?: boolean;
 }
 
 export interface AppData {

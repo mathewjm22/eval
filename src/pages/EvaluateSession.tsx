@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
 import { useAppData } from '../context';
@@ -92,6 +92,20 @@ export function EvaluateSession() {
   const [customConditionInput, setCustomConditionInput] = useState('');
   const [customTopicInputs, setCustomTopicInputs] = useState<Record<string, string>>({});
 
+  // Track whether this new evaluation has already been persisted as a draft.
+  // For existing evaluations (edit mode) we skip the draft flow entirely.
+  const draftPersistedRef = useRef<boolean>(!!existingEval);
+
+  // Auto-save draft: once the user has moved past step 0 and the draft has
+  // been written to the context, keep it updated every 3 seconds on changes.
+  useEffect(() => {
+    if (!draftPersistedRef.current || saved) return;
+    const timer = setTimeout(() => {
+      updateEvaluation({ ...form, isDraft: true, updatedAt: new Date().toISOString() });
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, [form, saved, updateEvaluation]);
+
   // Effect to automatically calculate phase and weekNumber when date changes
   useEffect(() => {
     if (form.date) {
@@ -173,7 +187,7 @@ export function EvaluateSession() {
   const previousConditions = useMemo(() => {
     return new Set(
       data.evaluations
-        .filter(e => e.studentId === form.studentId && e.id !== form.id)
+        .filter(e => e.studentId === form.studentId && e.id !== form.id && !e.isDraft)
         .flatMap(e => [...(e.conditionsSeen || []), ...(e.customConditions || [])]),
     );
   }, [data.evaluations, form.studentId, form.id]);
@@ -182,7 +196,7 @@ export function EvaluateSession() {
   const previousObjectives = useMemo(() => {
     return new Set(
       data.evaluations
-        .filter(e => e.studentId === form.studentId && e.id !== form.id)
+        .filter(e => e.studentId === form.studentId && e.id !== form.id && !e.isDraft)
         .flatMap(e => e.objectivesAchieved || []),
     );
   }, [data.evaluations, form.studentId, form.id]);
@@ -251,10 +265,16 @@ export function EvaluateSession() {
       ...form,
       phase: effectivePhase,
       updatedAt: new Date().toISOString(),
+      isDraft: false,
     };
-    if (existingEval) {
+    // True when the record already exists in context storage (either as a
+    // previously-saved evaluation or as a draft created during this session).
+    const isUpdatingExistingRecord = !!existingEval || draftPersistedRef.current;
+    if (isUpdatingExistingRecord) {
+      // Update in place and clear the draft flag.
       updateEvaluation(updated);
     } else {
+      // User submitted without ever advancing past step 0 (no draft was saved yet).
       addEvaluation(updated);
     }
     setSaved(true);
@@ -1267,7 +1287,15 @@ export function EvaluateSession() {
         </button>
         {step < LAST_STEP ? (
           <button
-            onClick={() => setStep(step + 1)}
+            onClick={() => {
+              // On the very first "Next" click for a new evaluation, persist a
+              // draft immediately so progress is saved even if the user leaves.
+              if (!draftPersistedRef.current && !existingEval) {
+                draftPersistedRef.current = true;
+                addEvaluation({ ...form, isDraft: true, updatedAt: new Date().toISOString() });
+              }
+              setStep(step + 1);
+            }}
             className="px-5 py-2.5 rounded-xl text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 transition-colors shadow-md shadow-indigo-200"
           >
             Next →
