@@ -359,7 +359,6 @@ export function EvaluateSession() {
                 onChange={e => updateForm('date', e.target.value)}
                 className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none"
               />
-            </div>
               <p className="text-xs mt-1 flex gap-2">
                 <span
                   className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${PHASE_CONFIG[autoPhase].bgColor} ${PHASE_CONFIG[autoPhase].color} border ${PHASE_CONFIG[autoPhase].borderColor}`}
