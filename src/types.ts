@@ -275,21 +275,21 @@ export const PHASE_CONFIG: Record<Phase, {
 }> = {
   early: {
     label: 'Early Phase',
-    weeks: 'Sep–Feb',
+    weeks: 'Weeks 1–7',
     color: 'text-blue-700',
     bgColor: 'bg-blue-50',
     borderColor: 'border-blue-200',
   },
   middle: {
     label: 'Middle Phase',
-    weeks: 'Mar–mid May',
+    weeks: 'Weeks 8–14',
     color: 'text-amber-700',
     bgColor: 'bg-amber-50',
     borderColor: 'border-amber-200',
   },
   final: {
     label: 'Final Phase',
-    weeks: 'mid May–Aug',
+    weeks: 'Weeks 15+',
     color: 'text-emerald-700',
     bgColor: 'bg-emerald-50',
     borderColor: 'border-emerald-200',
