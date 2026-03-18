@@ -36,7 +36,7 @@ const STEPS = [
 const LAST_STEP = STEPS.length - 1;
 
 export function EvaluateSession() {
-  const { data, addEvaluation, updateEvaluation } = useAppData();
+  const { data, addEvaluation, updateEvaluation, updateStudent } = useAppData();
   const navigate = useNavigate();
   const { id } = useParams();
 
@@ -106,31 +106,61 @@ export function EvaluateSession() {
     return () => clearTimeout(timer);
   }, [form, saved, updateEvaluation]);
 
-  // Effect to automatically calculate phase and weekNumber when date changes
-  useEffect(() => {
-    if (form.date) {
-      const calculatedPhase = determinePhaseFromDate(form.date);
-      const calculatedWeek = calculateWeekNumberFromDate(form.date);
+  const selectedStudent = useMemo(() => {
+    return data.students.find(s => s.id === form.studentId);
+  }, [data.students, form.studentId]);
 
+  // Determine timeline phase and week directly based on the student's start date
+  const [timelinePhase, timelineWeek] = useMemo(() => {
+    if (!selectedStudent || !selectedStudent.startDate) {
+      return ['early' as Phase, 1] as const;
+    }
+    const week = calculateWeekNumberFromDate(form.date, selectedStudent.startDate);
+    const phase = determinePhaseFromDate(form.date, selectedStudent.startDate);
+    return [phase, week] as const;
+  }, [form.date, selectedStudent]);
+
+  // Find the student's most recently saved (and explicitly overridden) phase
+  const performancePhaseFromHistory = useMemo(() => {
+    if (!form.studentId) return undefined;
+
+    // Get all previous submitted evaluations for this student, sorted chronologically
+    const studentEvals = data.evaluations
+      .filter(e => e.studentId === form.studentId && e.id !== form.id && !e.isDraft)
+      .filter(e => new Date(e.date) <= new Date(form.date))
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+    // Return the most recent explicitly overriden phase.
+    // If we only looked at the last eval and it didn't have an override,
+    // the student would snap back to the timeline phase.
+    const lastOverriddenEval = [...studentEvals].reverse().find(e => e.phaseOverride);
+    if (lastOverriddenEval) {
+      return lastOverriddenEval.phaseOverride;
+    }
+
+    return undefined;
+  }, [data.evaluations, form.studentId, form.id, form.date]);
+
+  // Determine the effective phase (auto falls back to historical, then to timeline)
+  const autoPhase = performancePhaseFromHistory || timelinePhase;
+
+  // Effect to sync weekNumber and phase into form state when they change
+  useEffect(() => {
+    if (form.date && selectedStudent?.startDate) {
       setForm(prev => {
-        if (prev.phase !== calculatedPhase || prev.weekNumber !== calculatedWeek) {
+        if (prev.phase !== autoPhase || prev.weekNumber !== timelineWeek) {
           return {
             ...prev,
-            phase: calculatedPhase,
-            weekNumber: calculatedWeek
+            phase: autoPhase,
+            weekNumber: timelineWeek
           };
         }
         return prev;
       });
     }
-  }, [form.date]);
+  }, [form.date, selectedStudent?.startDate, autoPhase, timelineWeek]);
 
-  // Auto-determine phase from date string
-  const autoPhase = useMemo((): Phase => {
-    return determinePhaseFromDate(form.date);
-  }, [form.date]);
-
-  // Effective phase: manual override takes priority over auto
+  // Effective phase: manual override takes priority over auto (which already considers history)
   const effectivePhase: Phase = form.phaseOverride || autoPhase;
   const isMidOrFinal = effectivePhase === 'middle' || effectivePhase === 'final';
 
@@ -313,6 +343,34 @@ export function EvaluateSession() {
     );
   }
 
+  // Check if we need to prompt the preceptor for a start date for legacy students
+  const needsStartDate = selectedStudent && !selectedStudent.startDate;
+
+  if (needsStartDate) {
+    return (
+      <div className="max-w-2xl mx-auto">
+        <div className="bg-white rounded-2xl border-2 border-indigo-200 p-12 text-center">
+          <div className="text-5xl mb-4">📅</div>
+          <h3 className="text-lg font-semibold text-slate-800">Start Date Required</h3>
+          <p className="text-sm text-slate-500 mt-2 mb-6">
+            To accurately calculate the rotation phase, please provide the start date for <strong>{selectedStudent.name}</strong>.
+          </p>
+          <div className="max-w-xs mx-auto">
+            <input
+              type="date"
+              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none mb-4"
+              onChange={(e) => {
+                if (e.target.value) {
+                  updateStudent({ ...selectedStudent, startDate: e.target.value });
+                }
+              }}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-3xl mx-auto space-y-6">
       <div>
@@ -379,15 +437,24 @@ export function EvaluateSession() {
                 onChange={e => updateForm('date', e.target.value)}
                 className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none"
               />
-              <p className="text-xs mt-1 flex gap-2">
-                <span
-                  className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${PHASE_CONFIG[autoPhase].bgColor} ${PHASE_CONFIG[autoPhase].color} border ${PHASE_CONFIG[autoPhase].borderColor}`}
-                >
-                  Auto: {PHASE_CONFIG[autoPhase].label} ({PHASE_CONFIG[autoPhase].weeks})
+              <p className="text-xs mt-1 flex flex-col gap-1">
+                <span className="flex items-center gap-1.5">
+                  <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${PHASE_CONFIG[timelinePhase].bgColor} ${PHASE_CONFIG[timelinePhase].color} border ${PHASE_CONFIG[timelinePhase].borderColor}`}>
+                    Timeline Phase: {PHASE_CONFIG[timelinePhase].label} (Week {timelineWeek})
+                  </span>
                 </span>
-                <span className="inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200">
-                  Calculated: Week {form.weekNumber}
-                </span>
+                {performancePhaseFromHistory && (
+                  <span className="flex items-center gap-1.5">
+                    <span className="inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+                      Performance Phase: {PHASE_CONFIG[performancePhaseFromHistory].label} (Based on past evaluations)
+                    </span>
+                  </span>
+                )}
+                {timelinePhase !== (performancePhaseFromHistory || timelinePhase) && (
+                  <span className="text-amber-600 font-medium">
+                    ⚠️ Note: Timeline suggests {PHASE_CONFIG[timelinePhase].label}, but student is performing at {PHASE_CONFIG[performancePhaseFromHistory!].label}.
+                  </span>
+                )}
               </p>
             </div>
             <div>
@@ -404,7 +471,7 @@ export function EvaluateSession() {
                 }
                 className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none"
               >
-                <option value="">Auto (based on date)</option>
+                <option value="">Auto ({performancePhaseFromHistory ? 'Performance Phase' : 'Timeline Phase'})</option>
                 <option value="early">Early Phase</option>
                 <option value="middle">Middle Phase</option>
                 <option value="final">Final Phase</option>
@@ -413,7 +480,7 @@ export function EvaluateSession() {
                 <p className="text-xs mt-1 text-amber-600">
                   ⚠️ Manual override active — using{' '}
                   <strong>{PHASE_CONFIG[form.phaseOverride].label}</strong> instead of
-                  auto-detected {PHASE_CONFIG[autoPhase].label}
+                  auto-detected {PHASE_CONFIG[autoPhase].label}. This will set the new Performance Phase.
                 </p>
               )}
             </div>

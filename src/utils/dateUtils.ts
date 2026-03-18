@@ -1,67 +1,53 @@
-export function determinePhaseFromDate(dateString: string): 'early' | 'middle' | 'final' {
-  if (!dateString) return 'early';
+/**
+ * Calculates the calendar week number since the student's start date.
+ * A week is defined as Sunday to Saturday. The week containing the start date is Week 1.
+ * @param evalDateString The date of the evaluation (YYYY-MM-DD)
+ * @param startDateString The student's start date (YYYY-MM-DD)
+ * @returns The week number (1-based)
+ */
+export function calculateWeekNumberFromDate(evalDateString: string, startDateString?: string): number {
+  if (!evalDateString || !startDateString) return 1;
 
-  const date = new Date(dateString);
-  const month = date.getMonth(); // 0-11
-  const day = date.getDate();
+  // Parse dates as local dates to avoid timezone issues with midnight UTC
+  const [evalYear, evalMonth, evalDay] = evalDateString.split('-').map(Number);
+  const [startYear, startMonth, startDay] = startDateString.split('-').map(Number);
 
-  // January (0) to end of February (1) is early
-  if (month === 0 || month === 1) {
-    return 'early';
-  }
+  const evalDate = new Date(evalYear, evalMonth - 1, evalDay);
+  const startDate = new Date(startYear, startMonth - 1, startDay);
 
-  // March (2) to middle of May (May 15) is middle
-  if (month === 2 || month === 3) {
-    return 'middle';
-  }
-  if (month === 4 && day <= 15) {
-    return 'middle';
-  }
+  // If evaluation is before start date, return week 1
+  if (evalDate < startDate) return 1;
 
-  // Middle of May (May 16) to end of July (6) is late (final)
-  if (month === 4 && day > 15) {
-    return 'final';
-  }
-  if (month === 5 || month === 6) {
-    return 'final';
-  }
+  // Find the Sunday of the week containing the start date
+  const startSunday = new Date(startDate);
+  startSunday.setDate(startDate.getDate() - startDate.getDay());
 
-  // August (7) is final
-  if (month === 7) {
-    return 'final';
-  }
+  // Reset time portions just to be safe
+  startSunday.setHours(0, 0, 0, 0);
+  evalDate.setHours(0, 0, 0, 0);
 
-  // September (8) to December (11) is early
-  if (month >= 8 && month <= 11) {
-    return 'early';
-  }
+  // Calculate difference in milliseconds from that Sunday
+  const diffTime = evalDate.getTime() - startSunday.getTime();
 
-  return 'early';
-}
-
-export function calculateWeekNumberFromDate(dateString: string): number {
-  if (!dateString) return 1;
-
-  const date = new Date(dateString);
-  const year = date.getFullYear();
-  const month = date.getMonth(); // 0-11
-
-  // Determine the start year for the "academic year" (Sept 1 to Aug 31)
-  // If the date is between Jan and Aug, the start year is the previous year
-  let startYear = year;
-  if (month >= 0 && month <= 7) {
-    startYear = year - 1;
-  }
-
-  const startDate = new Date(startYear, 8, 1); // September 1st
-
-  // Calculate difference in milliseconds
-  const diffTime = Math.abs(date.getTime() - startDate.getTime());
-  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  // Convert to days (using Math.round to avoid daylight saving issues where diff is 23 or 25 hours)
+  const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
 
   // Calculate week number (1-based)
   const weekNumber = Math.floor(diffDays / 7) + 1;
 
-  // Cap at 52 just in case
-  return Math.min(Math.max(weekNumber, 1), 52);
+  return weekNumber;
+}
+
+/**
+ * Determines the timeline phase based on the week number since the start date.
+ * Early: Weeks 1-7
+ * Middle: Weeks 8-14
+ * Final: Weeks 15+
+ */
+export function determinePhaseFromDate(evalDateString: string, startDateString?: string): 'early' | 'middle' | 'final' {
+  const weekNumber = calculateWeekNumberFromDate(evalDateString, startDateString);
+
+  if (weekNumber <= 7) return 'early';
+  if (weekNumber <= 14) return 'middle';
+  return 'final';
 }
