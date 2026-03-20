@@ -202,27 +202,46 @@ export function Layout({ children }: { children: ReactNode }) {
             className="border-t px-4 pb-3 space-y-1"
             style={{ borderColor: isDark ? "rgba(255,255,255,0.06)" : "var(--border)" }}
           >
-            {NAV_ITEMS.map((item) => (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                onClick={() => setMobileMenuOpen(false)}
-                className="block px-3 py-2.5 rounded-xl text-sm font-medium transition-all border"
-                style={({ isActive }) => ({
-                  borderColor: isActive
-                    ? isDark ? "rgba(255,45,120,0.3)" : "transparent"
-                    : "transparent",
-                  background: isActive
-                    ? isDark ? "linear-gradient(135deg, rgba(255,45,120,0.2), rgba(124,58,237,0.2))" : "var(--accent)"
-                    : "transparent",
-                  color: isActive
-                    ? isDark ? "#ff2d78" : "#ffffff"
-                    : isDark ? "rgba(255,255,255,0.75)" : "var(--text)",
-                })}
-              >
-                {item.label}
-              </NavLink>
-            ))}
+            {NAV_ITEMS.map((item) => {
+              if (item.id === "nav-teaching") {
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => {
+                      window.dispatchEvent(new CustomEvent('open-teaching-modal'));
+                      setMobileMenuOpen(false);
+                    }}
+                    className="w-full text-left block px-3 py-2.5 rounded-xl text-sm font-medium transition-all border border-transparent"
+                    style={{
+                      color: isDark ? "rgba(255,255,255,0.75)" : "var(--text)",
+                    }}
+                  >
+                    {item.label}
+                  </button>
+                );
+              }
+              return (
+                <NavLink
+                  key={item.path}
+                  to={item.path}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block px-3 py-2.5 rounded-xl text-sm font-medium transition-all border"
+                  style={({ isActive }) => ({
+                    borderColor: isActive
+                      ? isDark ? "rgba(255,45,120,0.3)" : "transparent"
+                      : "transparent",
+                    background: isActive
+                      ? isDark ? "linear-gradient(135deg, rgba(255,45,120,0.2), rgba(124,58,237,0.2))" : "var(--accent)"
+                      : "transparent",
+                    color: isActive
+                      ? isDark ? "#ff2d78" : "#ffffff"
+                      : isDark ? "rgba(255,255,255,0.75)" : "var(--text)",
+                  })}
+                >
+                  {item.label}
+                </NavLink>
+              );
+            })}
           </nav>
         )}
       </header>
