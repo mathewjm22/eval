@@ -6,6 +6,8 @@ import {
   SCORE_CATEGORIES,
   SCORE_LABELS,
   RED_FLAG_COMPETENCIES,
+  SessionEvaluation,
+  AdHocTeaching,
 } from '../types';
 import { isMidYearDate, isEndOfYearDate } from '../benchmarkWindows';
 
@@ -23,28 +25,41 @@ export function EvaluationsList() {
     data.students.find((s) => s.id === id)?.name || 'Unknown';
 
   const filtered = useMemo(() => {
-    let evals = [...data.evaluations].filter(e => !e.isDraft);
+    let items: (SessionEvaluation | AdHocTeaching)[] = [
+      ...data.evaluations.filter(e => !e.isDraft),
+      ...(data.teachings || [])
+    ];
 
     if (filterStudent !== 'all') {
-      evals = evals.filter((e) => e.studentId === filterStudent);
+      items = items.filter(item => {
+        if ('sessionType' in item) return item.studentId === filterStudent;
+        return item.studentIds.includes(filterStudent);
+      });
     }
     if (filterPhase !== 'all') {
-      evals = evals.filter((e) => e.phase === filterPhase);
+      items = items.filter(item => {
+        if ('sessionType' in item) return item.phase === filterPhase;
+        return false;
+      });
     }
 
-    evals.sort((a, b) => {
+    items.sort((a, b) => {
       if (sortBy === 'date') {
         return new Date(b.date).getTime() - new Date(a.date).getTime();
       }
       if (sortBy === 'week') {
-        return b.weekNumber - a.weekNumber;
+        const weekA = 'weekNumber' in a ? a.weekNumber : -1;
+        const weekB = 'weekNumber' in b ? b.weekNumber : -1;
+        return weekB - weekA;
       }
       // rating
-      return b.overallRating - a.overallRating;
+      const ratingA = 'overallRating' in a ? a.overallRating : -1;
+      const ratingB = 'overallRating' in b ? b.overallRating : -1;
+      return ratingB - ratingA;
     });
 
-    return evals;
-  }, [data.evaluations, filterStudent, filterPhase, sortBy]);
+    return items;
+  }, [data.evaluations, data.teachings, filterStudent, filterPhase, sortBy]);
 
   const drafts = useMemo(
     () => data.evaluations.filter(e => e.isDraft),
@@ -76,7 +91,7 @@ export function EvaluationsList() {
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
+      <div className="bg-white dark:bg-[#1a1f2e] rounded-xl border border-slate-200 dark:border-white/10 p-4 shadow-sm">
         <div className="flex flex-wrap gap-4">
           <div className="flex-1 min-w-[150px]">
             <label className="block text-xs font-medium text-slate-500 mb-1">
@@ -175,12 +190,12 @@ export function EvaluationsList() {
 
       {/* List */}
       {filtered.length === 0 ? (
-        <div className="bg-white rounded-2xl border-2 border-dashed border-slate-200 p-12 text-center">
+        <div className="bg-white dark:bg-[#1a1f2e] rounded-2xl border-2 border-dashed border-slate-200 dark:border-white/10 p-12 text-center">
           <div className="text-5xl mb-4">📋</div>
-          <h3 className="text-lg font-semibold text-slate-700">
+          <h3 className="text-lg font-semibold text-slate-700 dark:text-gray-200">
             No evaluations found
           </h3>
-          <p className="text-sm text-slate-400 mt-2">
+          <p className="text-sm text-slate-400 dark:text-gray-400 mt-2">
             {data.evaluations.filter(e => !e.isDraft).length === 0
               ? 'Create your first evaluation to see it here.'
               : 'Try adjusting your filters.'}
@@ -188,7 +203,110 @@ export function EvaluationsList() {
         </div>
       ) : (
         <div className="space-y-3">
-          {filtered.map((ev) => {
+          {filtered.map((item) => {
+            const isTeaching = !('sessionType' in item);
+
+            if (isTeaching) {
+              const th = item as AdHocTeaching;
+              const isExpanded = expandedId === th.id;
+              const studentNames = th.studentIds
+                .map(id => data.students.find(s => s.id === id)?.name)
+                .filter(Boolean)
+                .join(', ');
+              const topicsCount = th.teachingTopics.reduce((acc, cat) => acc + cat.topics.length, 0);
+
+              return (
+                <div
+                  key={th.id}
+                  className={`rounded-2xl border transition-all overflow-hidden bg-white dark:bg-[#1a1f2e] ${
+                    isExpanded
+                      ? 'ring-2 ring-blue-500 border-transparent shadow-md'
+                      : 'border-slate-200 dark:border-white/10 hover:border-blue-300 dark:hover:border-blue-500/30 hover:shadow-sm'
+                  }`}
+                >
+                  <button
+                    onClick={() => setExpandedId(isExpanded ? null : th.id)}
+                    className="w-full px-5 py-4 flex items-center gap-4 text-left hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+                  >
+                    {/* Icon/Date */}
+                    <div className="shrink-0 text-center w-14">
+                      <div className="text-xl mb-1">📚</div>
+                      <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                        {new Date(th.date + 'T00:00:00').toLocaleDateString(undefined, {
+                          month: 'short',
+                          day: 'numeric',
+                        })}
+                      </div>
+                    </div>
+
+                    <div className="h-10 w-[1px] bg-slate-100 dark:bg-white/10 shrink-0" />
+
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-semibold text-slate-800 dark:text-white text-base truncate pr-4">
+                        Teaching Session
+                      </h4>
+                      <div className="flex flex-wrap items-center gap-2 mt-1">
+                        <span className="text-xs text-slate-500 dark:text-gray-400 font-medium truncate max-w-xs">
+                          {studentNames || 'No students'}
+                        </span>
+                        <span className="text-[10px] px-1.5 py-0.5 rounded border border-slate-200 dark:border-white/10 text-slate-400 dark:text-gray-500">
+                          {topicsCount} topics
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="shrink-0 flex items-center text-blue-500">
+                      <svg
+                        className={`w-5 h-5 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </button>
+
+                  {isExpanded && (
+                    <div className="px-5 pb-5 pt-2 border-t border-slate-100 dark:border-white/10 bg-slate-50/50 dark:bg-black/20">
+                      <div className="space-y-4">
+                        {/* Topics */}
+                        {th.teachingTopics && th.teachingTopics.length > 0 && (
+                          <div className="pt-2">
+                            <h5 className="text-xs font-bold text-slate-800 dark:text-white uppercase tracking-wider mb-2">Teaching Topics</h5>
+                            <div className="space-y-2">
+                              {th.teachingTopics.map((tt) => (
+                                <div key={tt.category}>
+                                  <span className="text-[11px] font-semibold text-slate-500 dark:text-gray-400 mr-2">{tt.category}:</span>
+                                  <span className="text-[11px] text-slate-600 dark:text-gray-300">
+                                    {tt.topics.join(', ')}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Actions */}
+                        <div className="flex gap-2 pt-2">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              window.dispatchEvent(new CustomEvent('open-teaching-modal', { detail: { teachingId: th.id } }));
+                            }}
+                            className="px-4 py-2 rounded-lg text-sm font-medium bg-blue-100 text-blue-700 hover:bg-blue-200 transition-colors"
+                          >
+                            ✏️ Edit
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            }
+
+            const ev = item as SessionEvaluation;
             const phaseConf = PHASE_CONFIG[ev.phase];
             const isExpanded = expandedId === ev.id;
 
@@ -219,7 +337,7 @@ export function EvaluationsList() {
             return (
               <div
                 key={ev.id}
-                className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden hover:shadow-md transition-shadow"
+                className="bg-white dark:bg-[#1a1f2e] rounded-xl border border-slate-200 dark:border-white/10 shadow-sm overflow-hidden hover:shadow-md transition-shadow"
               >
                 {/* Row header */}
                 <div
@@ -229,14 +347,14 @@ export function EvaluationsList() {
                   }
                 >
                   <div className="flex items-center gap-4 flex-1 min-w-0">
-                    <div className="w-11 h-11 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold text-sm shrink-0">
+                    <div className="w-11 h-11 bg-indigo-100 dark:bg-indigo-500/10 rounded-full flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold text-sm shrink-0">
                       W{ev.weekNumber}
                     </div>
                     <div className="min-w-0">
-                      <p className="font-semibold text-slate-800 truncate">
+                      <p className="font-semibold text-slate-800 dark:text-white truncate">
                         {getStudentName(ev.studentId)}
                       </p>
-                      <p className="text-xs text-slate-400 mt-0.5">
+                      <p className="text-xs text-slate-400 dark:text-gray-400 mt-0.5">
                         {ev.date} • {ev.sessionType} •{' '}
                         {ev.patientEncounters} patients
                       </p>
@@ -293,17 +411,17 @@ export function EvaluationsList() {
 
                 {/* Expanded details */}
                 {isExpanded && (
-                  <div className="border-t border-slate-100 p-4 sm:p-5 space-y-5 bg-slate-50/50">
+                  <div className="border-t border-slate-100 dark:border-white/10 p-4 sm:p-5 space-y-5 bg-slate-50/50 dark:bg-black/20">
                     {/* Scores grid */}
                     <div>
-                      <h4 className="font-semibold text-slate-700 text-sm mb-3">
+                      <h4 className="font-semibold text-slate-700 dark:text-gray-200 text-sm mb-3">
                         Competency Scores
                       </h4>
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                         {SCORE_CATEGORIES.map((cat) => (
                           <div
                             key={cat.key}
-                            className="bg-white rounded-lg p-3 border border-slate-100 text-center"
+                            className="bg-white dark:bg-[#1a1f2e] rounded-lg p-3 border border-slate-100 dark:border-white/10 text-center"
                           >
                             <p className="text-[11px] text-slate-400 mb-1 leading-tight">
                               {cat.label}
@@ -336,41 +454,41 @@ export function EvaluationsList() {
                     {/* Narrative feedback */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       {ev.strengths && (
-                        <div className="bg-emerald-50 rounded-lg p-3 border border-emerald-100">
-                          <h5 className="font-semibold text-emerald-700 text-xs mb-1">
+                        <div className="bg-emerald-50 dark:bg-emerald-950/20 rounded-lg p-3 border border-emerald-100 dark:border-emerald-900/50">
+                          <h5 className="font-semibold text-emerald-700 dark:text-emerald-400 text-xs mb-1">
                             💪 Strengths
                           </h5>
-                          <p className="text-sm text-slate-600 whitespace-pre-wrap">
+                          <p className="text-sm text-slate-600 dark:text-gray-400 whitespace-pre-wrap">
                             {ev.strengths}
                           </p>
                         </div>
                       )}
                       {ev.areasForImprovement && (
-                        <div className="bg-amber-50 rounded-lg p-3 border border-amber-100">
-                          <h5 className="font-semibold text-amber-700 text-xs mb-1">
+                        <div className="bg-amber-50 dark:bg-amber-950/20 rounded-lg p-3 border border-amber-100 dark:border-amber-900/50">
+                          <h5 className="font-semibold text-amber-700 dark:text-amber-400 text-xs mb-1">
                             🎯 Areas for Improvement
                           </h5>
-                          <p className="text-sm text-slate-600 whitespace-pre-wrap">
+                          <p className="text-sm text-slate-600 dark:text-gray-400 whitespace-pre-wrap">
                             {ev.areasForImprovement}
                           </p>
                         </div>
                       )}
                       {ev.actionPlan && (
-                        <div className="bg-blue-50 rounded-lg p-3 border border-blue-100">
-                          <h5 className="font-semibold text-blue-700 text-xs mb-1">
+                        <div className="bg-blue-50 dark:bg-blue-950/20 rounded-lg p-3 border border-blue-100 dark:border-blue-900/50">
+                          <h5 className="font-semibold text-blue-700 dark:text-blue-400 text-xs mb-1">
                             📋 Action Plan
                           </h5>
-                          <p className="text-sm text-slate-600 whitespace-pre-wrap">
+                          <p className="text-sm text-slate-600 dark:text-gray-400 whitespace-pre-wrap">
                             {ev.actionPlan}
                           </p>
                         </div>
                       )}
                       {ev.preceptorNotes && (
-                        <div className="bg-slate-100 rounded-lg p-3 border border-slate-200">
-                          <h5 className="font-semibold text-slate-700 text-xs mb-1">
+                        <div className="bg-slate-100 dark:bg-white/5 rounded-lg p-3 border border-slate-200 dark:border-white/10">
+                          <h5 className="font-semibold text-slate-700 dark:text-gray-300 text-xs mb-1">
                             📝 Notes
                           </h5>
-                          <p className="text-sm text-slate-600 whitespace-pre-wrap">
+                          <p className="text-sm text-slate-600 dark:text-gray-400 whitespace-pre-wrap">
                             {ev.preceptorNotes}
                           </p>
                         </div>
@@ -379,8 +497,8 @@ export function EvaluationsList() {
 
                     {/* Internal Medicine red-flag benchmarks */}
                     {hasAnyRedFlagInfo && (
-                      <div className="bg-rose-50 rounded-xl p-4 border border-rose-200 space-y-3">
-                        <h4 className="font-semibold text-rose-800 text-sm">
+                      <div className="bg-rose-50 dark:bg-rose-950/20 rounded-xl p-4 border border-rose-200 dark:border-rose-900/50 space-y-3">
+                        <h4 className="font-semibold text-rose-800 dark:text-rose-200 text-sm">
                           Internal Medicine Benchmarks – Red Flags (Mid-Year / End-of-Rotation)
                         </h4>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
@@ -411,10 +529,10 @@ export function EvaluationsList() {
                             return (
                               <div
                                 key={comp.key}
-                                className="bg-white rounded-lg border border-rose-100 p-3 space-y-1.5"
+                                className="bg-white dark:bg-[#1a1f2e] rounded-lg border border-rose-100 dark:border-rose-900/30 p-3 space-y-1.5"
                               >
                                 <div className="flex items-center justify-between gap-2">
-                                  <p className="font-semibold text-slate-800 text-xs">
+                                  <p className="font-semibold text-slate-800 dark:text-gray-200 text-xs">
                                     {comp.label}
                                   </p>
                                   <span

@@ -1,7 +1,8 @@
 // src/components/Layout.tsx
-import React, { ReactNode, useState } from "react";
+import React, { ReactNode, useState, useEffect } from "react";
 import { Link, NavLink, useLocation } from "react-router-dom";
 import { useAppData } from "../context";
+import { AdHocTeachingModal } from "./AdHocTeachingModal";
 import { cn } from "../utils/cn";
 import { useTheme } from "../theme";
 
@@ -23,6 +24,12 @@ const NAV_SECTIONS = [
     label: "SCHEDULE",
     items: [
       { path: "/calendar", label: "Calendar" },
+    ],
+  },
+  {
+    label: "TEACHING",
+    items: [
+      { path: "#", label: "Teaching Topic Only", id: "nav-teaching" },
     ],
   },
   {
@@ -100,7 +107,23 @@ function Avatar({ avatarDataUrl, initials, size, isDark }: AvatarProps) {
 export function Layout({ children }: { children: ReactNode }) {
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isTeachingModalOpen, setIsTeachingModalOpen] = useState(false);
+  const [activeTeachingId, setActiveTeachingId] = useState<string | undefined>();
+  const [activeStudentId, setActiveStudentId] = useState<string | undefined>();
+
   const { data } = useAppData();
+
+  useEffect(() => {
+    const handleOpenTeachingModal = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      setActiveTeachingId(customEvent.detail?.teachingId);
+      setActiveStudentId(customEvent.detail?.studentId);
+      setIsTeachingModalOpen(true);
+    };
+    window.addEventListener('open-teaching-modal', handleOpenTeachingModal);
+    return () => window.removeEventListener('open-teaching-modal', handleOpenTeachingModal);
+  }, []);
+
   const { preceptor } = data;
   const { theme } = useTheme();
   const isDark = theme === "dark";
@@ -264,6 +287,27 @@ export function Layout({ children }: { children: ReactNode }) {
                   <div className="space-y-0.5">
                     {section.items.map((item) => {
                       const active = isActivePath(item.path, location.pathname);
+                      if (item.id === "nav-teaching") {
+                        return (
+                          <button
+                            key={item.id}
+                            onClick={() => {
+                              window.dispatchEvent(new CustomEvent('open-teaching-modal'));
+                              setMobileMenuOpen(false);
+                            }}
+                            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all hover:bg-black/5 dark:hover:bg-white/5"
+                            style={{ color: isDark ? "rgba(255,255,255,0.6)" : "var(--text)" }}
+                          >
+                            <span
+                              className="text-xs w-4 text-center flex-shrink-0"
+                              style={{ color: isDark ? "rgba(255,255,255,0.28)" : "rgba(148,163,184,0.6)" }}
+                            >
+                              📚
+                            </span>
+                            <span>{item.label}</span>
+                          </button>
+                        );
+                      }
                       return (
                         <NavLink
                           key={item.path}
@@ -440,6 +484,17 @@ export function Layout({ children }: { children: ReactNode }) {
       <main className="md:hidden max-w-7xl mx-auto px-4 pb-6 pt-4">
         {children}
       </main>
+
+      <AdHocTeachingModal
+        isOpen={isTeachingModalOpen}
+        onClose={() => {
+          setIsTeachingModalOpen(false);
+          setActiveTeachingId(undefined);
+          setActiveStudentId(undefined);
+        }}
+        teaching={data.teachings?.find(t => t.id === activeTeachingId)}
+        prefilledStudentId={activeStudentId}
+      />
     </div>
   );
 }

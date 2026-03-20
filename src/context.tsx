@@ -47,6 +47,8 @@ interface AppContextValue {
   addEvaluation: (evaluation: SessionEvaluation) => void;
   updateEvaluation: (evaluation: SessionEvaluation) => void;
   deleteEvaluation: (id: string) => void;
+  saveTeaching: (teaching: import('./types').AdHocTeaching) => void;
+  deleteTeaching: (id: string) => void;
 
   importData: (json: string) => void;
 
@@ -67,6 +69,7 @@ function loadCachedData(): AppData {
       preceptor: { ...DEFAULT_DATA.preceptor, ...(parsed.preceptor || {}) },
       students: Array.isArray(parsed.students) ? parsed.students : [],
       evaluations: Array.isArray(parsed.evaluations) ? parsed.evaluations : [],
+      teachings: Array.isArray(parsed.teachings) ? parsed.teachings : [],
     };
   } catch {
     return { ...DEFAULT_DATA };
@@ -86,6 +89,7 @@ function mergeIntoAppData(input: unknown, currentData: AppData): AppData {
   const remotePreceptor = { ...DEFAULT_DATA.preceptor, ...(parsed.preceptor || {}) };
   const remoteStudents = Array.isArray(parsed.students) ? parsed.students : [];
   const remoteEvaluations = Array.isArray(parsed.evaluations) ? parsed.evaluations : [];
+  const remoteTeachings = Array.isArray(parsed.teachings) ? parsed.teachings : [];
 
   // Merge Preceptor
   const isLocalPreceptorBlank =
@@ -146,12 +150,30 @@ function mergeIntoAppData(input: unknown, currentData: AppData): AppData {
     }
   });
 
+  // Merge Teachings
+  const mergedTeachings = [...(currentData.teachings || [])];
+  remoteTeachings.forEach((rt: import('./types').AdHocTeaching) => {
+    // Find if it exists locally by ID or structural match
+    const existingIndex = mergedTeachings.findIndex(
+      (lt) => lt.id === rt.id || (lt.date === rt.date && JSON.stringify(lt.teachingTopics) === JSON.stringify(rt.teachingTopics))
+    );
+
+    if (existingIndex >= 0) {
+      // Overwrite/update existing with remote data
+      mergedTeachings[existingIndex] = { ...rt };
+    } else {
+      // It's genuinely new, keep remote's ID or generate if it surprisingly lacks one
+      mergedTeachings.push({ ...rt, id: rt.id || crypto.randomUUID() });
+    }
+  });
+
   return {
     ...DEFAULT_DATA,
     ...parsed, // to pick up 'version' or other top-level fields
     preceptor: mergedPreceptor,
     students: mergedStudents,
     evaluations: mergedEvaluations,
+    teachings: mergedTeachings,
   };
 }
 
@@ -331,6 +353,29 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     scheduleDriveSave();
   }, [scheduleDriveSave]);
 
+  const saveTeaching = useCallback((teaching: import('./types').AdHocTeaching) => {
+    setData(prev => {
+      const existing = (prev.teachings || []).find(t => t.id === teaching.id);
+      if (existing) {
+        return {
+          ...prev,
+          teachings: (prev.teachings || []).map(t => t.id === teaching.id ? teaching : t)
+        };
+      } else {
+        return {
+          ...prev,
+          teachings: [...(prev.teachings || []), teaching]
+        };
+      }
+    });
+    scheduleDriveSave();
+  }, [scheduleDriveSave]);
+
+  const deleteTeaching = useCallback((id: string) => {
+    setData(prev => ({ ...prev, teachings: (prev.teachings || []).filter(t => t.id !== id) }));
+    scheduleDriveSave();
+  }, [scheduleDriveSave]);
+
   const importData = useCallback((json: string) => {
     try {
       const merged = mergeIntoAppData(JSON.parse(json), latestDataRef.current);
@@ -358,6 +403,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     addEvaluation,
     updateEvaluation,
     deleteEvaluation,
+    saveTeaching,
+    deleteTeaching,
     importData,
     drive,
   }), [
@@ -369,6 +416,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     addEvaluation,
     updateEvaluation,
     deleteEvaluation,
+    saveTeaching,
+    deleteTeaching,
     importData,
     drive,
   ]);
