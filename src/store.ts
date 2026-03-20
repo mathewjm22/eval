@@ -26,6 +26,7 @@ export function loadData(): AppData {
         preceptor: { ...DEFAULT_DATA.preceptor, ...(parsed.preceptor || {}) },
         students: Array.isArray(parsed.students) ? parsed.students : [],
         evaluations: Array.isArray(parsed.evaluations) ? parsed.evaluations : [],
+      teachings: Array.isArray(parsed.teachings) ? parsed.teachings : [],
       };
     }
   } catch {

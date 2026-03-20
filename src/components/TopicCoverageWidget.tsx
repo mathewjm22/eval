@@ -1,29 +1,44 @@
 import { useMemo } from 'react';
-import { SessionEvaluation, TEACHING_TOPIC_CATEGORIES } from '../types';
+import { SessionEvaluation, AdHocTeaching, TEACHING_TOPIC_CATEGORIES } from '../types';
 import { useTheme } from '../theme';
 
 interface TopicCoverageWidgetProps {
   evaluations: SessionEvaluation[];
+  teachings?: AdHocTeaching[];
   studentId: string | undefined;
 }
 
-export function TopicCoverageWidget({ evaluations, studentId }: TopicCoverageWidgetProps) {
+export function TopicCoverageWidget({ evaluations, teachings = [], studentId }: TopicCoverageWidgetProps) {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
 
   const coveredByCategory = useMemo(() => {
     const result: Record<string, Set<string>> = {};
-    const filtered = studentId
+
+    // Add from evaluations
+    const filteredEvals = studentId
       ? evaluations.filter(ev => ev.studentId === studentId)
       : evaluations;
-    for (const ev of filtered) {
+    for (const ev of filteredEvals) {
       for (const { category, topics } of ev.teachingTopics ?? []) {
         if (!result[category]) result[category] = new Set();
         for (const t of topics) result[category].add(t);
       }
     }
+
+    // Add from ad-hoc teachings
+    const filteredTeachings = studentId
+      ? teachings.filter(th => th.studentIds.includes(studentId))
+      : teachings;
+    for (const th of filteredTeachings) {
+      for (const { category, topics } of th.teachingTopics ?? []) {
+        if (!result[category]) result[category] = new Set();
+        for (const t of topics) result[category].add(t);
+      }
+    }
+
     return result;
-  }, [evaluations, studentId]);
+  }, [evaluations, teachings, studentId]);
 
   const { totalTopics, coveredCount } = useMemo(() => {
     let total = 0;
@@ -58,16 +73,39 @@ export function TopicCoverageWidget({ evaluations, studentId }: TopicCoverageWid
         >
           📚 Teaching Topics Coverage
         </h4>
-        <span
-          className="text-xs font-medium px-2 py-0.5 rounded-full"
-          style={
-            isDark
-              ? { background: 'rgba(46,213,115,0.15)', color: '#2ed573' }
-              : { background: '#dcfce7', color: '#15803d' }
-          }
-        >
-          {coveredCount} / {totalTopics} covered
-        </span>
+        <div className="flex items-center gap-2">
+          <span
+            className="text-xs font-medium px-2 py-0.5 rounded-full"
+            style={
+              isDark
+                ? { background: 'rgba(46,213,115,0.15)', color: '#2ed573' }
+                : { background: '#dcfce7', color: '#15803d' }
+            }
+          >
+            {coveredCount} / {totalTopics} covered
+          </span>
+          <button
+            onClick={() => {
+              window.dispatchEvent(new CustomEvent('open-teaching-modal', { detail: { studentId } }));
+            }}
+            className="text-xs font-semibold px-2 py-0.5 rounded-full border transition-colors"
+            style={
+              isDark
+                ? {
+                    background: 'rgba(59, 130, 246, 0.15)',
+                    borderColor: 'rgba(59, 130, 246, 0.3)',
+                    color: '#60a5fa',
+                  }
+                : {
+                    background: '#eff6ff',
+                    borderColor: '#bfdbfe',
+                    color: '#2563eb',
+                  }
+            }
+          >
+            Add+
+          </button>
+        </div>
       </div>
 
       {/* Category rows */}
@@ -120,6 +158,41 @@ export function TopicCoverageWidget({ evaluations, studentId }: TopicCoverageWid
             </div>
           </div>
         ))}
+
+        {/* Custom Topics Row */}
+        {coveredByCategory["Custom Topics"] && coveredByCategory["Custom Topics"].size > 0 && (
+          <div key="custom-topics" className="pt-2">
+            <p
+              className="text-xs font-semibold mb-1.5"
+              style={{ color: isDark ? 'rgba(168,85,247,0.7)' : '#9333ea' }}
+            >
+              Custom Write-In Topics
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {Array.from(coveredByCategory["Custom Topics"]).map(topic => (
+                <span
+                  key={topic}
+                  className="text-[11px] px-2 py-0.5 rounded-full border font-medium"
+                  style={
+                    isDark
+                      ? {
+                          background: 'rgba(168,85,247,0.15)',
+                          border: '1px solid rgba(168,85,247,0.4)',
+                          color: '#c084fc',
+                        }
+                      : {
+                          background: 'rgba(147,51,234,0.1)',
+                          border: '1px solid rgba(147,51,234,0.3)',
+                          color: '#7e22ce',
+                        }
+                  }
+                >
+                  {topic}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

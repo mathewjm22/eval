@@ -26,6 +26,13 @@ export interface StudentProfile {
   clinicalSkillScores?: { skillId: string; rating: ClinicalSkillRating; date: string }[];
 }
 
+export interface AdHocTeaching {
+  id: string;
+  date: string;
+  studentIds: string[];
+  teachingTopics: TeachingTopic[];
+}
+
 export interface TeachingTopic {
   category: string;
   topics: string[];
@@ -160,6 +167,7 @@ export interface AppData {
   preceptor: PreceptorProfile;
   students: StudentProfile[];
   evaluations: SessionEvaluation[];
+  teachings?: AdHocTeaching[];
   version: string;
 }
 

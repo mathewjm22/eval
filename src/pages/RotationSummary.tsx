@@ -199,7 +199,7 @@ export function RotationSummary() {
       />
 
       {/* Teaching Topics Coverage */}
-      <TopicCoverageWidget evaluations={data.evaluations.filter(e => !e.isDraft)} studentId={studentId} />
+      <TopicCoverageWidget evaluations={data.evaluations.filter(e => !e.isDraft)} teachings={data.teachings} studentId={studentId} />
     </div>
   );
 }
