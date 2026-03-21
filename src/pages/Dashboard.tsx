@@ -628,6 +628,7 @@ export function Dashboard() {
           />
           <TopicCoverageWidget
             evaluations={evaluations}
+            teachings={data.teachings}
             studentId={selectedStudentId}
           />
         </div>
