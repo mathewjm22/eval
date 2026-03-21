@@ -71,7 +71,7 @@ export const AdHocTeachingModal = ({ isOpen, onClose, teaching, prefilledStudent
     });
 
     if (customTopics.length > 0) {
-      teachingTopics.push({ category: "Custom Topics", topics: customTopics });
+      teachingTopics.push({ category: "Other", topics: customTopics });
     }
 
     const newTeaching: AdHocTeaching = {
@@ -114,9 +114,7 @@ export const AdHocTeachingModal = ({ isOpen, onClose, teaching, prefilledStudent
     if (customTopic.trim() && !topics.includes(customTopic.trim())) {
       const newTopic = customTopic.trim();
       setTopics(prev => [...prev, newTopic]);
-      if (customTopicCategory) {
-        updateCustomTopicMapping(newTopic, customTopicCategory);
-      }
+      updateCustomTopicMapping(newTopic, customTopicCategory || "Other");
       setCustomTopic("");
       setCustomTopicCategory("");
     }
@@ -125,7 +123,16 @@ export const AdHocTeachingModal = ({ isOpen, onClose, teaching, prefilledStudent
   const activeStudents = data.students;
 
   const allAvailableTopics = TEACHING_TOPIC_CATEGORIES.flatMap(c => c.topics);
-  const customAddedTopics = topics.filter(t => !allAvailableTopics.includes(t));
+
+  // Custom topics are those in the selected topics OR historically saved custom mappings
+  const allKnownCustomTopics = Array.from(new Set([
+    ...Object.keys(data.customTopicMappings || {}),
+    ...topics.filter(t => !allAvailableTopics.includes(t))
+  ]));
+
+  const visibleCustomTopics = allKnownCustomTopics.filter(t =>
+    t.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
@@ -245,11 +252,11 @@ export const AdHocTeachingModal = ({ isOpen, onClose, teaching, prefilledStudent
 
             <div className="bg-gray-50 dark:bg-black/20 rounded-xl border border-black/5 dark:border-white/5 p-4 max-h-64 overflow-y-auto space-y-6">
               {/* Custom Added Topics */}
-              {customAddedTopics.length > 0 && (
+              {visibleCustomTopics.length > 0 && (
                 <div className="space-y-3">
                   <h4 className="text-xs font-bold tracking-wider text-purple-500 uppercase">Custom Topics</h4>
                   <div className="flex flex-wrap gap-2">
-                    {customAddedTopics.map(topic => (
+                    {visibleCustomTopics.map(topic => (
                       <button
                         key={topic}
                         onClick={() => toggleTopic(topic)}
