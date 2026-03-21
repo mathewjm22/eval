@@ -168,6 +168,7 @@ export interface AppData {
   students: StudentProfile[];
   evaluations: SessionEvaluation[];
   teachings?: AdHocTeaching[];
+  customTopicMappings?: Record<string, string>;
   version: string;
 }
 

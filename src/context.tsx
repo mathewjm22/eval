@@ -23,6 +23,7 @@ const DEFAULT_DATA: AppData = {
   },
   students: [],
   evaluations: [],
+  customTopicMappings: {},
   version: '1.0.0',
 };
 
@@ -49,6 +50,7 @@ interface AppContextValue {
   deleteEvaluation: (id: string) => void;
   saveTeaching: (teaching: import('./types').AdHocTeaching) => void;
   deleteTeaching: (id: string) => void;
+  updateCustomTopicMapping: (topic: string, category: string | null) => void;
 
   importData: (json: string) => void;
 
@@ -376,6 +378,19 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     scheduleDriveSave();
   }, [scheduleDriveSave]);
 
+  const updateCustomTopicMapping = useCallback((topic: string, category: string | null) => {
+    setData(prev => {
+      const newMappings = { ...(prev.customTopicMappings || {}) };
+      if (category === null) {
+        delete newMappings[topic];
+      } else {
+        newMappings[topic] = category;
+      }
+      return { ...prev, customTopicMappings: newMappings };
+    });
+    scheduleDriveSave();
+  }, [scheduleDriveSave]);
+
   const importData = useCallback((json: string) => {
     try {
       const merged = mergeIntoAppData(JSON.parse(json), latestDataRef.current);
@@ -405,6 +420,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     deleteEvaluation,
     saveTeaching,
     deleteTeaching,
+    updateCustomTopicMapping,
     importData,
     drive,
   }), [
@@ -418,6 +434,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     deleteEvaluation,
     saveTeaching,
     deleteTeaching,
+    updateCustomTopicMapping,
     importData,
     drive,
   ]);

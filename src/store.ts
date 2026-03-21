@@ -12,6 +12,7 @@ const DEFAULT_DATA: AppData = {
   },
   students: [],
   evaluations: [],
+  customTopicMappings: {},
   version: '1.0.0',
 };
 
@@ -26,7 +27,8 @@ export function loadData(): AppData {
         preceptor: { ...DEFAULT_DATA.preceptor, ...(parsed.preceptor || {}) },
         students: Array.isArray(parsed.students) ? parsed.students : [],
         evaluations: Array.isArray(parsed.evaluations) ? parsed.evaluations : [],
-      teachings: Array.isArray(parsed.teachings) ? parsed.teachings : [],
+        teachings: Array.isArray(parsed.teachings) ? parsed.teachings : [],
+        customTopicMappings: typeof parsed.customTopicMappings === 'object' && parsed.customTopicMappings !== null ? parsed.customTopicMappings : {},
       };
     }
   } catch {
