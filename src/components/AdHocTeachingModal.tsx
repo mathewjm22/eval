@@ -18,7 +18,10 @@ export const AdHocTeachingModal = ({ isOpen, onClose, teaching, prefilledStudent
   const [date, setDate] = useState(format(new Date(), "yyyy-MM-dd"));
   const [topics, setTopics] = useState<string[]>([]);
   const [customTopic, setCustomTopic] = useState("");
+  const [customTopicCategory, setCustomTopicCategory] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState("");
+
+  const { updateCustomTopicMapping } = useAppData();
 
   useEffect(() => {
     if (isOpen) {
@@ -109,8 +112,13 @@ export const AdHocTeachingModal = ({ isOpen, onClose, teaching, prefilledStudent
   const addCustomTopic = (e: React.FormEvent) => {
     e.preventDefault();
     if (customTopic.trim() && !topics.includes(customTopic.trim())) {
-      setTopics(prev => [...prev, customTopic.trim()]);
+      const newTopic = customTopic.trim();
+      setTopics(prev => [...prev, newTopic]);
+      if (customTopicCategory) {
+        updateCustomTopicMapping(newTopic, customTopicCategory);
+      }
       setCustomTopic("");
+      setCustomTopicCategory("");
     }
   };
 
@@ -204,21 +212,35 @@ export const AdHocTeachingModal = ({ isOpen, onClose, teaching, prefilledStudent
             </div>
 
             {/* Custom Topic Input */}
-            <form onSubmit={addCustomTopic} className="flex gap-2">
-              <input
-                type="text"
-                placeholder="Add custom write-in topic..."
-                value={customTopic}
-                onChange={(e) => setCustomTopic(e.target.value)}
-                className="flex-1 px-4 py-2 rounded-lg border border-black/10 dark:border-white/10 bg-gray-50 dark:bg-black/20 text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500/50 outline-none transition-all"
-              />
-              <button
-                type="submit"
-                disabled={!customTopic.trim()}
-                className="px-4 py-2 bg-gray-100 dark:bg-white/5 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-white/10 transition-colors disabled:opacity-50 flex items-center gap-2"
-              >
-                <Plus className="w-4 h-4" /> Add
-              </button>
+            <form onSubmit={addCustomTopic} className="flex flex-col gap-2">
+              <div className="flex gap-2 w-full">
+                <input
+                  type="text"
+                  placeholder="Add custom write-in topic..."
+                  value={customTopic}
+                  onChange={(e) => setCustomTopic(e.target.value)}
+                  className="flex-1 px-4 py-2 rounded-lg border border-black/10 dark:border-white/10 bg-gray-50 dark:bg-black/20 text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500/50 outline-none transition-all"
+                />
+                <select
+                  value={customTopicCategory}
+                  onChange={(e) => setCustomTopicCategory(e.target.value)}
+                  className="w-48 px-4 py-2 rounded-lg border border-black/10 dark:border-white/10 bg-gray-50 dark:bg-black/20 text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500/50 outline-none transition-all"
+                >
+                  <option value="">N/A (Other)</option>
+                  {TEACHING_TOPIC_CATEGORIES.map(cat => (
+                    <option key={cat.category} value={cat.category}>
+                      {cat.category}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="submit"
+                  disabled={!customTopic.trim()}
+                  className="px-4 py-2 bg-gray-100 dark:bg-white/5 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-white/10 transition-colors disabled:opacity-50 flex items-center gap-2 whitespace-nowrap"
+                >
+                  <Plus className="w-4 h-4" /> Add
+                </button>
+              </div>
             </form>
 
             <div className="bg-gray-50 dark:bg-black/20 rounded-xl border border-black/5 dark:border-white/5 p-4 max-h-64 overflow-y-auto space-y-6">

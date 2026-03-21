@@ -203,10 +203,10 @@ export function Layout({ children }: { children: ReactNode }) {
             style={{ borderColor: isDark ? "rgba(255,255,255,0.06)" : "var(--border)" }}
           >
             {NAV_ITEMS.map((item) => {
-              if (item.id === "nav-teaching") {
+              if ((item as any).id === "nav-teaching") {
                 return (
                   <button
-                    key={item.id}
+                    key={(item as any).id}
                     onClick={() => {
                       window.dispatchEvent(new CustomEvent('open-teaching-modal'));
                       setMobileMenuOpen(false);
@@ -306,10 +306,10 @@ export function Layout({ children }: { children: ReactNode }) {
                   <div className="space-y-0.5">
                     {section.items.map((item) => {
                       const active = isActivePath(item.path, location.pathname);
-                      if (item.id === "nav-teaching") {
+                      if ((item as any).id === "nav-teaching") {
                         return (
                           <button
-                            key={item.id}
+                            key={(item as any).id}
                             onClick={() => {
                               window.dispatchEvent(new CustomEvent('open-teaching-modal'));
                               setMobileMenuOpen(false);

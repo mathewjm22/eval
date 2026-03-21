@@ -13,6 +13,7 @@ import { Settings } from "./pages/Settings";
 import { ThemeProvider } from "./theme";
 import { EvaluationCalendar } from "./pages/EvaluationCalendar";
 import { RotationSummary } from "./pages/RotationSummary"; // NEW
+import { CustomTopicMappingModal } from "./components/CustomTopicMappingModal";
 
 function AnimatedRoutes() {
   const location = useLocation();
@@ -41,6 +42,7 @@ export function App() {
         <HashRouter>
           <Layout>
             <AnimatedRoutes />
+            <CustomTopicMappingModal />
           </Layout>
         </HashRouter>
       </AppProvider>
