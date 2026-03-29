@@ -530,17 +530,21 @@ export function Dashboard() {
         )}
         <div className="flex items-center gap-3">
           <div
-            className="h-9 w-9 rounded-2xl text-sm font-semibold flex items-center justify-center flex-shrink-0"
+            className="h-9 w-9 rounded-2xl overflow-hidden text-sm font-semibold flex items-center justify-center flex-shrink-0"
             style={isDark ? {
-              background: 'linear-gradient(135deg, #ff2d78, #7c3aed)',
+              background: preceptor.avatarDataUrl ? undefined : 'linear-gradient(135deg, #ff2d78, #7c3aed)',
               color: '#ffffff',
-              boxShadow: '0 4px 12px rgba(255,45,120,0.4)',
+              boxShadow: preceptor.avatarDataUrl ? undefined : '0 4px 12px rgba(255,45,120,0.4)',
             } : {
-              background: '#4f46e5',
+              background: preceptor.avatarDataUrl ? undefined : '#4f46e5',
               color: '#ffffff',
             }}
           >
-            {initials}
+            {preceptor.avatarDataUrl ? (
+              <img src={preceptor.avatarDataUrl} alt={preceptor.name || 'Preceptor'} className="w-full h-full object-cover" />
+            ) : (
+              initials
+            )}
           </div>
           <div>
             <p className="text-sm font-semibold" style={{ color: isDark ? 'rgba(255,255,255,0.9)' : '#0f172a' }}>
